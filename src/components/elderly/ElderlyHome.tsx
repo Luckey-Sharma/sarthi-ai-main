@@ -3,6 +3,9 @@ import { Language, PatientProfile, AppView, CognitiveSession, GameId } from '../
 import { ShieldAlert, Volume2, Droplet, ArrowRight, Play, Heart } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { SarthiQuickBanner } from '../sarthi/SarthiQuickBanner';
+import { DailyAISummaryCard } from '../sarthi/DailyAISummaryCard';
+import { RecommendedForYouToday } from '../sarthi/RecommendedForYouToday';
+import { patientContextEngine } from '../../services/patientContextEngine';
 import { speak, stopSpeaking } from '../../services/voiceService';
 
 interface ElderlyHomeProps {
@@ -13,6 +16,7 @@ interface ElderlyHomeProps {
   onNavigate: (view: AppView, gameId?: GameId) => void;
   onOpenSOS: () => void;
   onOpenSarthiModal: () => void;
+  onOpenAISaathi?: (initialQuery?: string) => void;
 }
 
 export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
@@ -23,6 +27,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
   onNavigate,
   onOpenSOS,
   onOpenSarthiModal,
+  onOpenAISaathi,
 }) => {
   const { t } = useTranslation();
 
@@ -112,6 +117,14 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
           </div>
         </div>
       </div>
+
+      {/* AI Saathi Daily Summary Card ("Your Day with AI Saathi") */}
+      <DailyAISummaryCard
+        patient={patientContextEngine.getActivePatientRecord()}
+        language={language}
+        onNavigate={onNavigate}
+        onOpenAISaathi={(q) => (onOpenAISaathi ? onOpenAISaathi(q) : onOpenSarthiModal())}
+      />
 
       {/* Sarthi AI Cognitive Care Companion Banner */}
       <SarthiQuickBanner
@@ -254,6 +267,14 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
           </button>
         </div>
       </div>
+
+      {/* AI Saathi Dynamic Health Recommendations ("Recommended for You Today") */}
+      <RecommendedForYouToday
+        patient={patientContextEngine.getActivePatientRecord()}
+        language={language}
+        onNavigate={onNavigate}
+        onOpenAISaathiWithQuery={(q) => (onOpenAISaathi ? onOpenAISaathi(q) : onOpenSarthiModal())}
+      />
 
       {/* Family & Memories Dock Strip */}
       <div className="bg-[#ffffff] rounded-3xl border border-[#becabf]/60 shadow-md p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5">

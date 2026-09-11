@@ -6,6 +6,8 @@ export type AppView =
   | 'home'
   | 'games'
   | 'game_detail'
+  | 'caregiver_session'
+  | 'session_summary'
   | 'family'
   | 'reminders'
   | 'calming'
@@ -170,6 +172,30 @@ export interface SoundCard {
   icon: string;
   imageUrl?: string;
   description: Record<Language, string>;
+}
+
+export type FolkTuneId = 'bihu_spring' | 'baul_melody' | 'manipuri_pena' | 'hill_flute' | 'temple_chime';
+
+export interface FolkSongCard {
+  id: string;
+  tuneId: FolkTuneId;
+  title: Record<Language, string>;
+  region: Record<Language, string>;
+  description: Record<Language, string>;
+  imageUrl: string;
+  culturalMemory: Record<Language, string>;
+}
+
+export interface CaregiverSessionRecord {
+  id: string;
+  gameId: GameId;
+  gameTitle: string;
+  patientId: string;
+  caregiverNote?: string;
+  moodTag?: 'calm' | 'cheerful' | 'reflective' | 'low_energy';
+  durationSeconds: number;
+  timestamp: string;
+  date: string;
 }
 
 // ==========================================

@@ -1,9 +1,12 @@
-import { Language } from '../types';
+import { Language, FolkTuneId } from '../types';
 
 class VoiceService {
   private synth: SpeechSynthesis | null = null;
   private audioCtx: AudioContext | null = null;
   private voices: SpeechSynthesisVoice[] = [];
+  private isMuted: boolean = false;
+  private activeMelodyTimeouts: any[] = [];
+  private activeOscillators: OscillatorNode[] = [];
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -92,6 +95,7 @@ class VoiceService {
 
   // Web Audio API procedural synthesis for North-East organic soundscapes
   public playSound(sound: 'pepa_flute' | 'temple_bell' | 'monsoon_rain' | 'lake_ripples' | 'hornbill_call' | 'success' | 'click' | 'leaf_pluck' | 'gentle_buzz' | 'bihu_dhol' | 'stream_water' | 'conch_shell'): void {
+    if (this.isMuted) return;
     try {
       const ctx = this.getAudioContext();
       const now = ctx.currentTime;
@@ -250,18 +254,19 @@ class VoiceService {
         }
 
         case 'gentle_buzz': {
-          // Gentle low boop/buzz for caterpillar touch (gentle for seniors)
+          // Warm soft harmonic cue - pleasant and calming for seniors, zero buzzer effect
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(180, now);
-          osc.frequency.linearRampToValueAtTime(120, now + 0.2);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(392, now); // G4
+          osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.2); // C5
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(now);
-          osc.stop(now + 0.25);
+          osc.stop(now + 0.35);
           break;
         }
 
@@ -349,6 +354,153 @@ class VoiceService {
       }
     } catch {
       // AudioContext unavailable or blocked by autoplay
+    }
+  }
+
+  public setMuted(muted: boolean): void {
+    this.isMuted = muted;
+    if (muted) {
+      this.stopFolkTune();
+      this.stop();
+    }
+  }
+
+  public getIsMuted(): boolean {
+    return this.isMuted;
+  }
+
+  public stopFolkTune(): void {
+    this.activeMelodyTimeouts.forEach((t) => clearTimeout(t));
+    this.activeMelodyTimeouts = [];
+    this.activeOscillators.forEach((osc) => {
+      try {
+        osc.stop();
+        osc.disconnect();
+      } catch {
+        // Ignore errors from already stopped nodes
+      }
+    });
+    this.activeOscillators = [];
+  }
+
+  public playFolkTune(tuneId: FolkTuneId, onEnd?: () => void): void {
+    if (this.isMuted) {
+      if (onEnd) onEnd();
+      return;
+    }
+    this.stopFolkTune();
+
+    try {
+      const ctx = this.getAudioContext();
+      const startNow = ctx.currentTime + 0.05;
+
+      let melody: { freq: number; dur: number; type: OscillatorType; gain: number }[] = [];
+
+      switch (tuneId) {
+        case 'bihu_spring': {
+          // Traditional Assamese Bihu hornpipe (Pepa) phrase with flute harmonics
+          melody = [
+            { freq: 659.25, dur: 0.35, type: 'sawtooth', gain: 0.12 }, // E5
+            { freq: 783.99, dur: 0.35, type: 'sawtooth', gain: 0.13 }, // G5
+            { freq: 880.0, dur: 0.5, type: 'sawtooth', gain: 0.15 }, // A5
+            { freq: 783.99, dur: 0.3, type: 'sawtooth', gain: 0.12 }, // G5
+            { freq: 659.25, dur: 0.4, type: 'sawtooth', gain: 0.12 }, // E5
+            { freq: 587.33, dur: 0.3, type: 'sawtooth', gain: 0.1 }, // D5
+            { freq: 659.25, dur: 0.75, type: 'sawtooth', gain: 0.14 }, // E5
+          ];
+          this.playSound('bihu_dhol');
+          const dholTimeout = setTimeout(() => {
+            if (!this.isMuted) this.playSound('bihu_dhol');
+          }, 1100);
+          this.activeMelodyTimeouts.push(dholTimeout);
+          break;
+        }
+
+        case 'baul_melody': {
+          // Soothing Baul and Rabindra Sangeet acoustic string phrase
+          melody = [
+            { freq: 293.66, dur: 0.4, type: 'triangle', gain: 0.15 }, // D4
+            { freq: 369.99, dur: 0.4, type: 'triangle', gain: 0.15 }, // F#4
+            { freq: 440.0, dur: 0.5, type: 'sine', gain: 0.16 }, // A4
+            { freq: 493.88, dur: 0.45, type: 'sine', gain: 0.16 }, // B4
+            { freq: 440.0, dur: 0.4, type: 'triangle', gain: 0.14 }, // A4
+            { freq: 587.33, dur: 0.6, type: 'sine', gain: 0.16 }, // D5
+            { freq: 440.0, dur: 0.85, type: 'triangle', gain: 0.13 }, // A4
+          ];
+          break;
+        }
+
+        case 'manipuri_pena': {
+          // Serene Manipuri bowed string melody
+          melody = [
+            { freq: 523.25, dur: 0.45, type: 'sawtooth', gain: 0.1 }, // C5
+            { freq: 587.33, dur: 0.45, type: 'sawtooth', gain: 0.11 }, // D5
+            { freq: 698.46, dur: 0.5, type: 'sawtooth', gain: 0.12 }, // F5
+            { freq: 783.99, dur: 0.55, type: 'sawtooth', gain: 0.13 }, // G5
+            { freq: 698.46, dur: 0.4, type: 'sawtooth', gain: 0.11 }, // F5
+            { freq: 587.33, dur: 0.45, type: 'sawtooth', gain: 0.1 }, // D5
+            { freq: 523.25, dur: 0.85, type: 'sawtooth', gain: 0.11 }, // C5
+          ];
+          break;
+        }
+
+        case 'hill_flute': {
+          // Gentle Meghalaya mountain bamboo flute
+          melody = [
+            { freq: 392.0, dur: 0.45, type: 'sine', gain: 0.15 }, // G4
+            { freq: 493.88, dur: 0.45, type: 'sine', gain: 0.16 }, // B4
+            { freq: 587.33, dur: 0.55, type: 'sine', gain: 0.17 }, // D5
+            { freq: 659.25, dur: 0.5, type: 'sine', gain: 0.17 }, // E5
+            { freq: 587.33, dur: 0.45, type: 'sine', gain: 0.15 }, // D5
+            { freq: 392.0, dur: 0.9, type: 'sine', gain: 0.14 }, // G4
+          ];
+          break;
+        }
+
+        case 'temple_chime':
+        default: {
+          // Sacred Kamakhya Temple bell chime sequence
+          melody = [
+            { freq: 587.33, dur: 0.5, type: 'sine', gain: 0.16 }, // D5
+            { freq: 880.0, dur: 0.5, type: 'sine', gain: 0.14 }, // A5
+            { freq: 1174.66, dur: 0.6, type: 'sine', gain: 0.12 }, // D6
+            { freq: 880.0, dur: 0.5, type: 'sine', gain: 0.13 }, // A5
+            { freq: 587.33, dur: 1.0, type: 'sine', gain: 0.15 }, // D5
+          ];
+          this.playSound('conch_shell');
+          break;
+        }
+      }
+
+      let noteTime = startNow;
+      melody.forEach((note) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = note.type;
+        osc.frequency.setValueAtTime(note.freq, noteTime);
+
+        gain.gain.setValueAtTime(0, noteTime);
+        gain.gain.linearRampToValueAtTime(note.gain, noteTime + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + note.dur);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(noteTime);
+        osc.stop(noteTime + note.dur);
+
+        this.activeOscillators.push(osc);
+        noteTime += note.dur;
+      });
+
+      const totalMs = (noteTime - startNow) * 1000;
+      const endTimeout = setTimeout(() => {
+        if (onEnd) onEnd();
+      }, totalMs + 100);
+      this.activeMelodyTimeouts.push(endTimeout);
+    } catch {
+      if (onEnd) onEnd();
     }
   }
   // Speech-to-Text (STT) via Web Speech API
@@ -476,8 +628,20 @@ export function stopListening(): void {
   voiceService.stopListening();
 }
 
-export function isListening(): boolean {
-  return voiceService.isListening();
+export function playFolkTune(tuneId: FolkTuneId, onEnd?: () => void): void {
+  voiceService.playFolkTune(tuneId, onEnd);
+}
+
+export function stopFolkTune(): void {
+  voiceService.stopFolkTune();
+}
+
+export function setSoundMuted(muted: boolean): void {
+  voiceService.setMuted(muted);
+}
+
+export function isSoundMuted(): boolean {
+  return voiceService.getIsMuted();
 }
 
 export default voiceService;

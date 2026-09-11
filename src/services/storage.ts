@@ -4,6 +4,7 @@ import {
   FamilyMember,
   Medication,
   CognitiveSession,
+  CaregiverSessionRecord,
   Language,
   DDAState,
   GameId,
@@ -24,9 +25,11 @@ const KEYS = {
   FAMILY: 'smritisetu_family',
   MEDICATIONS: 'smritisetu_medications',
   COGNITIVE_HISTORY: 'smritisetu_cognitive_sessions',
+  CAREGIVER_SESSIONS: 'smritisetu_caregiver_sessions',
   WATER_COUNT: 'smritisetu_water_count',
   WATER_DATE: 'smritisetu_water_date',
   LANGUAGE: 'smritisetu_language',
+  SOUND_MUTED: 'smritisetu_sound_muted',
   GAME_DDA_PREFIX: 'smritisetu_dda_',
   SYNC_QUEUE: 'smritisetu_sync_queue',
 };
@@ -140,6 +143,25 @@ export function saveCognitiveSession(session: CognitiveSession): void {
   enqueueSyncItem({ type: 'session', data: session });
 }
 
+export function loadCaregiverSessions(): CaregiverSessionRecord[] {
+  return safeGet<CaregiverSessionRecord[]>(KEYS.CAREGIVER_SESSIONS, []);
+}
+
+export function saveCaregiverSession(record: CaregiverSessionRecord): void {
+  const existing = loadCaregiverSessions();
+  const updated = [record, ...existing];
+  safeSet(KEYS.CAREGIVER_SESSIONS, updated);
+  enqueueSyncItem({ type: 'caregiver_note', data: record });
+}
+
+export function loadSoundMuted(): boolean {
+  return safeGet<boolean>(KEYS.SOUND_MUTED, false);
+}
+
+export function saveSoundMuted(muted: boolean): void {
+  safeSet(KEYS.SOUND_MUTED, muted);
+}
+
 export function loadWaterCount(): number {
   const today = new Date().toDateString();
   const savedDate = safeGet<string>(KEYS.WATER_DATE, '');
@@ -211,6 +233,10 @@ export const storage = {
   saveMedications,
   loadCognitiveHistory,
   saveCognitiveSession,
+  loadCaregiverSessions,
+  saveCaregiverSession,
+  loadSoundMuted,
+  saveSoundMuted,
   loadWaterCount,
   saveWaterCount,
   loadLanguage,

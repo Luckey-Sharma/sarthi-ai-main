@@ -8,6 +8,7 @@ import {
   BrainQuestPuzzle,
   RoutineCard,
   SoundCard,
+  FolkSongCard,
 } from '../types';
 
 export const demoPatients: PatientProfile[] = [
@@ -169,6 +170,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Traditional conical hat made from tightly woven bamboo and palm leaves.',
     },
     icon: '👒',
+    imageUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Presented to guests in Assam as a gesture of highest respect.',
   },
   {
@@ -188,6 +190,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Traditional bell-metal offering tray on a stand, manufactured in Sarthebari.',
     },
     icon: '🏆',
+    imageUrl: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Used to present betel nut (Tamul-Paan) and offer prayers at Naamghars.',
   },
   {
@@ -207,6 +210,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Handwoven white rectangular cloth with distinctive red woven borders.',
     },
     icon: '🧣',
+    imageUrl: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Awarded GI tag status; symbolizes love, purity, and veneration of elders.',
   },
   {
@@ -226,6 +230,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Majestic bird celebrated across Nagaland and Arunachal Pradesh hill folklore.',
     },
     icon: '🦜',
+    imageUrl: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Celebrated every December in Nagaland during the Hornbill Festival.',
   },
   {
@@ -245,6 +250,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Rare golden silk endemic only to Assam, worn during Rongali Bihu dances.',
     },
     icon: '✨',
+    imageUrl: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Historically exclusive to Ahom royalty; can last over 100 years.',
   },
   {
@@ -264,6 +270,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Two-sided percussion instrument played with bamboo sticks during Bihu.',
     },
     icon: '🥁',
+    imageUrl: 'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'The rhythmic beats simulate the thunderclouds of the spring monsoon.',
   },
   {
@@ -283,6 +290,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Clay and bamboo theatrical masks crafted in Samaguri Satra for Bhaona plays.',
     },
     icon: '🎭',
+    imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Recent recipient of the prestigious Geographical Indication (GI) tag.',
   },
   {
@@ -302,6 +310,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'World’s only floating national park, home to the endangered Sangai dancing deer.',
     },
     icon: '🏞️',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Keibul Lamjao is the only floating sanctuary of its kind on planet Earth.',
   },
   {
@@ -321,6 +330,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Foot-operated traditional wooden grain pounder used for Bihu pitha preparation.',
     },
     icon: '🌾',
+    imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Central to Bihu festivals across rural North-East households for generations.',
   },
   {
@@ -340,6 +350,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Iconic hornpipe crafted from wild buffalo horn and bamboo reed.',
     },
     icon: '🎺',
+    imageUrl: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Only skilled village craftsmen know the secret of curing the buffalo horn for acoustics.',
   },
   {
@@ -359,6 +370,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'State animal of Assam, thriving in the elephant grass of Kaziranga.',
     },
     icon: '🦏',
+    imageUrl: 'https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'Kaziranga is home to over 2,600 great one-horned rhinos.',
   },
   {
@@ -378,6 +390,7 @@ export const culturalCards: CulturalCard[] = [
       en: 'Bio-engineering wonder created by Khasi and Jaintia tribes over centuries.',
     },
     icon: '🌉',
+    imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=500&q=80',
     culturalFact: 'These living bridges grow stronger and more durable with age.',
   },
   {
@@ -1257,3 +1270,171 @@ export const demoCognitiveHistory: CognitiveSession[] = Array.from({ length: 30 
     difficultyLevel: 1 + Math.floor(i / 10),
   };
 });
+
+export const folkSongs: FolkSongCard[] = [
+  {
+    id: 'fs-1',
+    tuneId: 'bihu_spring',
+    title: {
+      en: 'Bihu Spring Pepa Melody',
+      as: 'ৰঙালী বিহুৰ পেঁপা আৰু সুৰ',
+      bn: 'রঙালী বিহুর বাঁশি ও ঢোলের সুর',
+      hi: 'रोंगाली बिहू पेपा व ढोल की धुन',
+      mni: 'Bihu Springgi Khonjel',
+    },
+    region: {
+      en: 'Assam (Brahmaputra Valley)',
+      as: 'অসম (ব্ৰহ্মপুত্ৰ উপত্যকা)',
+      bn: 'আসাম (ব্রহ্মপুত্র উপত্যকা)',
+      hi: 'असम (ब्रह्मपुत्र घाटी)',
+      mni: 'Assam',
+    },
+    description: {
+      en: 'The joyful spring buffalo horn flute (Pepa) melody played during Rongali Bihu as the orchids bloom.',
+      as: 'কপৌ ফুল ফুলাৰ বতৰত ৰঙালী বিহুৰ মাঙ্গলিক সুৰ। ঢোল আৰু পেঁপাৰ চিৰসেউজ আনন্দ।',
+      bn: 'বসন্তের শুরুতে অর্কিড ফোটার সময় ঐতিহ্যবাহী মহিষের শিঙের পেঁপা ও ঢোলের মিষ্টি সুর।',
+      hi: 'वसंत ऋतु में कोपौ फूल खिलने पर बजने वाली पारंपरिक पेपा व ढोल की मधुर धुन।',
+      mni: 'Bihugi matamda khongba fajaba makhon.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=600&q=80',
+    culturalMemory: {
+      en: 'In village courtyards across Assam, families gather under the shade of mango trees as young dancers celebrate the coming of harvest.',
+      as: 'গাঁৱৰ চোতালত আমৰ ছাঁত ডেকা-গাভৰুৱে বিহু নাচি নতুন বছৰক আদৰে।',
+      bn: 'গ্রামের উঠোনে নতুন ফসলের আনন্দে পরিবার ও প্রিয়জনরা একত্রিত হয়।',
+      hi: 'गांव के आंगनों में नई फसल और नए साल के स्वागत में सभी प्रियजन एक साथ मिलकर गीत गाते हैं।',
+      mni: 'Yumgi manggonda meeyam punna haraoba matam.',
+    },
+  },
+  {
+    id: 'fs-2',
+    tuneId: 'baul_melody',
+    title: {
+      en: 'Barak Valley Baul & Rabindra Melody',
+      as: 'বাউল আৰু সুৰীয়া একতাৰা',
+      bn: 'বরাক উপত্যকার বাউল ও রবীন্দ্র সঙ্গীত',
+      hi: 'बराक घाटी की बाउल व एकतारा धुन',
+      mni: 'Ektaragi Khonjel',
+    },
+    region: {
+      en: 'Cachar & Bengal Heritage',
+      as: 'বৰাক উপত্যকা আৰু কাছাৰ',
+      bn: 'কাছাড় ও বরাক উপত্যকা',
+      hi: 'कछार एवं बराक घाटी',
+      mni: 'Barak Valley',
+    },
+    description: {
+      en: 'Peaceful acoustic tones of the Ektara evoking riverside evenings by the Barak and Padma rivers.',
+      as: 'বৰাক নদীৰ ঘাটত একতাৰা আৰু বাঁহীৰ শান্ত মৰমীয়া সুৰ।',
+      bn: 'নদীর শান্ত ঘাটে গোধূলি লগ্নে মন জুড়ানো একতারা ও বাঁশির স্নিগ্ধ সুর।',
+      hi: 'शांत नदी के किनारे बजने वाली एकतारा की सुमधुर व आध्यात्मिक धुन।',
+      mni: 'Turel mapada khongba fajaba khonjel.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
+    culturalMemory: {
+      en: 'Listening to the boatman singing folk songs as the crimson sunset settles over the river bend.',
+      as: 'সন্ধিয়া বেলি লহিওৱা সময়ত নৈৰ ঘাটত নাৱৰীয়াৰ ভাটিয়ালী গীতৰ স্মৃতি।',
+      bn: 'সূর্যাস্তের সময় নদীর শান্ত জলে মাঝির কণ্ঠে ভাটিয়ালী সুরের স্মৃতি।',
+      hi: 'शाम के समय शांत नदी के किनारे माझी के सुरीले गीत सुनने का सुखद अनुभव।',
+      mni: 'Numit thaba matamda turelda esahei taba.',
+    },
+  },
+  {
+    id: 'fs-3',
+    tuneId: 'manipuri_pena',
+    title: {
+      en: 'Manipuri Pena & Temple Hymn',
+      as: 'মণিপুৰী পেনা আৰু লাই হাৰাওবা',
+      bn: 'মণিপুরী পেনা ও লাই হারাওবা সুর',
+      hi: 'मणिपुरी पेना व लाई हाराओबा धुन',
+      mni: 'Manipuri Pena amasung Lai Haraoba',
+    },
+    region: {
+      en: 'Manipur (Imphal Valley & Loktak)',
+      as: 'মণিপুৰ (ইম্ফল উপত্যকা)',
+      bn: 'মণিপুর (ইম্ফল উপত্যকা)',
+      hi: 'मणिपुर (इम्फाल घाटी)',
+      mni: 'Manipur',
+    },
+    description: {
+      en: 'The sacred, resonant bowed string of the ancient Pena played during morning prayers and festivals.',
+      as: 'পবিত্ৰ পেনা বাদ্যৰ সুৰ, যিয়ে পূৱাৰ বতাহত শান্তি কঢ়িয়াই আনে।',
+      bn: 'প্রাচীন ঐতিহ্যবাহী পেনা যন্ত্রের পবিত্র সুর, যা ভোরে মন্দিরে ও উৎসবে ধ্বনিত হয়।',
+      hi: 'प्राचीन पारंपरिक पेना वाद्य की मधुर व शांत धुन, जो सुबह की प्रार्थना में बजती है।',
+      mni: 'Lai Haraobagi matamda khongba Pena gi makhon.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80',
+    culturalMemory: {
+      en: 'Walking peacefully by Kangla Fort as the lotus flowers open in the morning mist.',
+      as: 'পুৱাৰ কুঁৱলীৰ মাজত পদুম ফুলা পুখুৰীৰ পাৰেৰে শান্ত খোজেৰে খোজ কঢ়াৰ স্মৃতি।',
+      bn: 'সকালের শান্ত বাতাসে পদ্মফোটা দিঘির পাড়ে ভোরের আলো দেখার স্মৃতি।',
+      hi: 'सुबह की शांत हवा में कमल के तालाब के पास टहलने की सुखद यादें।',
+      mni: 'Ayangba numitta thambal satpa yengba.',
+    },
+  },
+  {
+    id: 'fs-4',
+    tuneId: 'hill_flute',
+    title: {
+      en: 'Khasi Hills Gentle Bamboo Flute',
+      as: 'মেঘালয় পাহাৰৰ বাঁহীৰ সুৰ',
+      bn: 'খাসি পাহাড়ের শান্ত বাঁশির সুর',
+      hi: 'खासी पहाड़ियों की शांत बांसुरी',
+      mni: 'Chinggi Wagi Makhon',
+    },
+    region: {
+      en: 'Meghalaya (Shillong & Cherrapunji)',
+      as: 'মেঘালয় (শ্বিলং আৰু চেৰাপুঞ্জী)',
+      bn: 'মেঘালয় (শিলং ও চেরাপুঞ্জি)',
+      hi: 'मेघालय (शिलांग व चेरापूंजी)',
+      mni: 'Meghalaya',
+    },
+    description: {
+      en: 'Soothing pentatonic bamboo flute melody echoing softly through pine forests and misty valleys.',
+      as: 'চিৰাপুঞ্জীৰ পাইন বননি আৰু কুঁৱলীৰ মাজেৰে বৈ অহা পাহাৰীয়া বাঁহীৰ কোমল ধ্বনি।',
+      bn: 'পাইন বনের মধ্য দিয়ে ভেসে আসা মিষ্টি পাহাড়ি বাঁশির সুর।',
+      hi: 'देवदार व चीड़ के जंगलों से होकर गुजरने वाली पहाड़ी बांसुरी की शांत धुन।',
+      mni: 'Ching gi nungsit oina lakpa wagi khonjel.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
+    culturalMemory: {
+      en: 'Sipping hot tea on a wooden veranda while watching clouds roll over the blue hills.',
+      as: 'কাঠৰ বাৰাণ্ডাত বহি গৰম চাহৰ কাপ হাতত লৈ নীলা পাহাৰৰ বুকুত মেঘৰ খেলা চোৱাৰ আনন্দ।',
+      bn: 'বারান্দায় বসে গরম চায়ের কাপে চুমুক দিয়ে মেঘের ওড়াউড়ি দেখার মুহূর্ত।',
+      hi: 'पहाड़ी बरामदे में बैठकर गरम चाय की चुस्की लेते हुए बादलों को निहारने का सुकून।',
+      mni: 'Cha thakna chinggi leichil yengba.',
+    },
+  },
+  {
+    id: 'fs-5',
+    tuneId: 'temple_chime',
+    title: {
+      en: 'Kamakhya Temple Evening Bells',
+      as: 'কামাখ্যাৰ সন্ধিয়াৰ কাঁহ-ঘণ্টা',
+      bn: 'কামাখ্যা মন্দিরের সন্ধ্যার কাঁসা-ঘণ্টা',
+      hi: 'कामाख्या मंदिर की संध्या घंटी व शंख',
+      mni: 'Laisanggi Kangsi Makhon',
+    },
+    region: {
+      en: 'Nilachal Hills, Guwahati',
+      as: 'নীলাচল পাহাৰ, গুৱাহাটী',
+      bn: 'নীলাচল পাহাড়, গুয়াহাটি',
+      hi: 'नीलाचल पर्वत, गुवाहाटी',
+      mni: 'Guwahati Nilachal',
+    },
+    description: {
+      en: 'Deep bronze temple bells and conch shell resonance at sunset on Nilachal hill.',
+      as: 'নীলাচলৰ বুকুত সন্ধিয়াৰ আৰতিৰ কাঁহ-ঘণ্টা আৰু শংখৰ পৱিত্ৰ ধ্বনি।',
+      bn: 'সন্ধ্যা আরতির সময় কাঁসার ঘণ্টা ও পবিত্র শঙ্খের গভীর শান্তিময় ধ্বনি।',
+      hi: 'संध्या आरती के समय पीतल की घंटी और शंख की पवित्र एवं शांत गूंज।',
+      mni: 'Numidangwairam laisangda kangsi khongba.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1545232979-fbf675951a83?auto=format&fit=crop&w=600&q=80',
+    culturalMemory: {
+      en: 'Lighting a brass oil lamp in the family prayer room as the distant temple bells chime.',
+      as: 'ঘৰৰ নামঘৰ বা গোঁসাইঘৰত মাটিৰ চাকি জ্বলাই মনলৈ অহা পৰম শান্তিৰ অনুভূতি।',
+      bn: 'সন্ধ্যার আলোয় তুলসীতলায় প্রদীপ জ্বালানোর সময় দূর থেকে আসা ঘণ্টার ধ্বনি।',
+      hi: 'शाम को घर के मंदिर में दीपक जलाते समय आने वाली शांति और सुकून का अहसास।',
+      mni: 'Yumgi thaomei thambada thouna phangba.',
+    },
+  },
+];

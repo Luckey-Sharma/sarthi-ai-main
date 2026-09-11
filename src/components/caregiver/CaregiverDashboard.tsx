@@ -9,6 +9,8 @@ import {
 import { storage } from '../../services/storage';
 import { aiEngine } from '../../services/aiEngine';
 import { SarthiCaregiverSection } from '../sarthi/SarthiCaregiverSection';
+import { CaregiverPrivacyModal } from './CaregiverPrivacyModal';
+import { UserRole } from '../../types/healthCompanion';
 import {
   LineChart,
   Line,
@@ -35,6 +37,7 @@ import {
   Smile,
   Frown,
   Meh,
+  Lock,
 } from 'lucide-react';
 
 interface CaregiverDashboardProps {
@@ -57,6 +60,8 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({
   const [caregiver, setCaregiver] = useState<CaregiverProfile>(() => storage.loadCaregiver());
   const [burnoutScore, setBurnoutScore] = useState<number>(caregiver.burnoutScore);
   const [showExportSuccess, setShowExportSuccess] = useState<boolean>(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
+  const [activeRole, setActiveRole] = useState<UserRole>('caregiver');
 
   React.useEffect(() => {
     setSessions(initialSessions || storage.loadCognitiveHistory());
@@ -165,6 +170,15 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({
               ))}
             </select>
           </div>
+
+          <button
+            onClick={() => setIsPrivacyOpen(true)}
+            className="px-4 py-2.5 bg-white hover:bg-[#ecefea] text-[#032517] border border-[#becabf] rounded-2xl text-xs font-bold shadow-xs flex items-center gap-2 shrink-0 cursor-pointer transition-colors"
+            title="Manage Data Privacy and Role Permissions"
+          >
+            <Lock className="w-4 h-4 text-[#416740]" />
+            <span>Privacy & Roles</span>
+          </button>
 
           <button
             onClick={handleExportReport}
@@ -444,6 +458,14 @@ export const CaregiverDashboard: React.FC<CaregiverDashboardProps> = ({
           SIH 2024 / 2025 Finalist
         </span>
       </div>
+
+      {/* Role-Based Privacy & Consent Modal */}
+      <CaregiverPrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+        activeRole={activeRole}
+        onRoleChange={setActiveRole}
+      />
     </div>
   );
 };

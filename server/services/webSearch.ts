@@ -41,6 +41,8 @@ const AUTHORITATIVE_DOMAINS: Record<string, string> = {
   'nhp.gov.in': 'National Health Portal (India)',
   'nha.gov.in': 'National Health Authority (India)',
   'icmr.gov.in': 'Indian Council of Medical Research (ICMR)',
+  'nin.res.in': 'National Institute of Nutrition (NIN India)',
+  'fssai.gov.in': 'Food Safety and Standards Authority of India (FSSAI)',
   'nimhans.ac.in': 'NIMHANS Bengaluru',
   'aiims.edu': 'AIIMS New Delhi',
   'nhs.uk': 'National Health Service (NHS UK)',

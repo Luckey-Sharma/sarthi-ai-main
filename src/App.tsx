@@ -17,6 +17,7 @@ import { SarthiFloatingTrigger } from './components/sarthi/SarthiFloatingTrigger
 import { Modal } from './components/common/Modal';
 import { LanguageWelcomeModal } from './components/common/LanguageWelcomeModal';
 import { SarthiCompanionModal } from './components/sarthi/SarthiCompanionModal';
+import { AISaathiHealthCompanion } from './components/sarthi/AISaathiHealthCompanion';
 
 // Dashboards
 import { ElderlyHome } from './components/elderly/ElderlyHome';
@@ -52,8 +53,15 @@ export const App: React.FC = () => {
     return typeof window !== 'undefined' ? !localStorage.getItem('smritisetu_has_picked_language') : false;
   });
   const [isSarthiOpen, setIsSarthiOpen] = useState<boolean>(false);
+  const [isAISaathiOpen, setIsAISaathiOpen] = useState<boolean>(false);
+  const [aiSaathiInitialQuery, setAiSaathiInitialQuery] = useState<string>('');
   const [sessions, setSessions] = useState<CognitiveSession[]>(() => storage.loadCognitiveHistory());
   const [waterCount, setWaterCount] = useState<number>(() => storage.loadWaterCount());
+
+  const handleOpenAISaathi = (query?: string) => {
+    setAiSaathiInitialQuery(query || '');
+    setIsAISaathiOpen(true);
+  };
 
   // Keep sessions and waterCount updated across views
   useEffect(() => {
@@ -206,6 +214,7 @@ export const App: React.FC = () => {
             }}
             onOpenSOS={() => setIsSOSOpen(true)}
             onOpenSarthiModal={() => setIsSarthiOpen(true)}
+            onOpenAISaathi={handleOpenAISaathi}
           />
         );
     }
@@ -248,7 +257,30 @@ export const App: React.FC = () => {
         {/* Floating Sarthi Cognitive Care Companion Button */}
         <SarthiFloatingTrigger
           language={language}
-          onClick={() => setIsSarthiOpen(true)}
+          onClick={() => handleOpenAISaathi()}
+        />
+
+        {/* AI Saathi Intelligent Health Companion Modal */}
+        <AISaathiHealthCompanion
+          isOpen={isAISaathiOpen}
+          onClose={() => setIsAISaathiOpen(false)}
+          language={language}
+          initialQuery={aiSaathiInitialQuery}
+          onOpenSOS={() => {
+            setIsAISaathiOpen(false);
+            setMode('elderly');
+            setView('emergency');
+          }}
+          onNavigate={(targetView, targetGameId) => {
+            setIsAISaathiOpen(false);
+            setMode('elderly');
+            if (targetView === 'game_detail' && targetGameId) {
+              setSelectedGame(targetGameId);
+              setView('game_detail');
+            } else {
+              setView(targetView);
+            }
+          }}
         />
 
         {/* Sarthi AI Cognitive Care Companion Interactive Modal */}

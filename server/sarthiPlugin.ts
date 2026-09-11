@@ -91,9 +91,9 @@ function registerSarthiMiddleware(middlewares: any) {
           }
         }
 
-        // 12-second total timeout promise
+        // 25-second total timeout promise
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Sarthi Gemini API timeout (12s)')), 12000)
+          setTimeout(() => reject(new Error('Sarthi Gemini API timeout (25s)')), 25000)
         );
 
         const geminiResult = await Promise.race([
