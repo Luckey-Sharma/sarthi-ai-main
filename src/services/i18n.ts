@@ -1,0 +1,794 @@
+import { Language } from '../types';
+
+export const UI_STRINGS: Record<Language, Record<string, string>> = {
+  en: {
+    back: 'Back',
+    home: 'Home',
+    playAgain: 'Play Again',
+    moves: 'Moves',
+    level: 'Level',
+    score: 'Score',
+    question: 'Question',
+    hint: 'Show Hint',
+    hideHint: 'Hide Hint',
+    offlineReady: 'Offline Ready',
+    elderlyMode: 'Elderly Mode',
+    caregiverMode: 'Caregiver Mode',
+    sos: 'SOS',
+    readAloud: 'Read Aloud',
+    continue: 'Continue',
+    save: 'Save',
+    cancel: 'Cancel',
+
+    // Elderly Home
+    today: 'Today',
+    elderlyGreetingSubtitle: 'Keep your spirit joyful and spend a peaceful, relaxing day.',
+    waterWidgetTitle: 'Water Hydration',
+    waterWidgetAction: 'Meds & Water ➔',
+    tile1Title: '1. Play Games',
+    tile1Subtitle: 'Memory match, tea garden focus, and hill folklore riddles',
+    tile1Badge: '7 Games',
+    tile2Title: '2. Family & Memories',
+    tile2Subtitle: 'Cherished photographs and lifetime memories of loved ones',
+    tile2Badge: 'Album',
+    tile3Title: '3. Calming Sanctuary',
+    tile3Subtitle: 'Soothing rainfall sounds, gentle breathing exercises and nature',
+    tile3Badge: 'Find Calm',
+    sosHelpTitle: 'Help Me (Emergency SOS)',
+    sosHelpSubtitle: 'Where am I? Call my family and home right away',
+
+    // Games Hub
+    gamesHubBadge: '7 Cognitive Domains',
+    gamesHubTitle: 'Cognitive Health Games',
+    gamesHubSubtitle: 'Culturally inspired activities to nourish memory, attention, logic, and joy.',
+    playGameAction: 'Touch to Play',
+
+    // Memory Match
+    memoryMatchTitle: 'Cultural Memory Match',
+    memoryMatchFamilyTitle: 'Family Photo Match',
+    memoryMatchSubtitle: 'Flip the cards to discover pairs of matching heritage treasures!',
+    culturalArtifacts: 'Cultural Artifacts',
+    familyPhotos: 'Family Photos',
+    touchToFlip: 'Touch to Flip',
+    matched: 'Matched',
+    memoryWonTitle: 'Wonderful! You Won! 🎉',
+    memoryWonSubtitle: 'Excellent! You matched all cultural treasures.',
+
+    // Tea Garden Focus
+    teaGardenTitle: 'Tea Garden Focus',
+    teaGardenSubtitle: 'Tap the fresh golden tea leaves ("Two leaves and a bud") as soon as they appear!',
+    teaGardenPluck: 'Pluck!',
+    teaGardenCaterpillar: "Don't touch",
+    teaGardenReady: 'Ready to pluck tea leaves?',
+    teaGardenStartPrompt: 'Test your reflexes and focus in the tranquil tea gardens of Assam.',
+    startGame: 'Start Game',
+    teaGardenFinishedTitle: "Time's Up! Great Job!",
+    teaLeavesCount: 'Tea Leaves',
+    leavesBasket: 'Basket',
+    reactionSpeed: 'Reaction Speed',
+    accuracy: 'Accuracy',
+    teaGardenBudsPlucked: 'Buds Plucked',
+    teaGardenCaterpillarsAvoided: 'Caterpillars Avoided',
+    teaGardenLeavesMissed: 'Missed Buds',
+    teaGardenCaution: 'Watch out! Caterpillar!',
+    teaGardenGreatJob: 'Wonderful plucking! Your basket is brimming with fresh leaves!',
+
+    // Brain Quest
+    brainQuestTitle: 'Hill Riddles (Brain Quest)',
+    brainQuestSubtitle: 'Executive Function & Cultural Logic',
+    brainQuestSolvedTitle: 'Riddles Solved! 🎉',
+
+    // Pattern Weave
+    patternWeaveTitle: 'Handloom Pattern Weave',
+    warpWeft: 'Handloom Warp & Weft Sequence',
+    whichMotif: 'Which motif comes next to complete the weave?',
+    patternWeaveWonTitle: 'Handloom Pattern Complete! 🌸',
+
+    // Routine Builder
+    routineBuilderTitle: 'Daily Routine Builder',
+    routineBuilderSubtitle: 'Arrange your daily routine activities in chronological morning-to-night order!',
+    checkOrder: 'Check Routine Order',
+    routineWonTitle: 'Wonderful! Perfect Daily Order! 🌟',
+    routineWonSubtitle: 'Your daily rhythm and temporal orientation is clear, balanced, and sharp.',
+    reShuffle: 'Re-shuffle',
+
+    // Sounds of Hills
+    soundsHillsTitle: 'Sounds of the Hills',
+    soundsHillsSubtitle: 'Listen to the traditional sound and choose what made it!',
+    listenSound: 'Listen to Sound',
+    soundPlaying: 'Playing sound...',
+    touchToPlaySound: 'Touch the button above to play the sound',
+    whichSoundMadeThis: 'Which one made this sound?',
+    soundsWonTitle: 'Sound Recognition Complete! 🎶',
+
+    // Family Recall
+    familyRecallTitle: 'Recognize Your Loved Ones',
+    familyRecallSubtitle: 'Look at the photograph and recognize your dear family member!',
+    rememberPrompt: 'Remember:',
+    whoIsThis: 'Who is this loved one?',
+    familyRecallWonTitle: 'Family Love Endures Always! ❤️',
+
+    // Family Manager
+    familyAlbumTitle: 'Family & Memories Album',
+    familyAlbumSubtitle: 'Autobiographical anchors to connect seniors with their cherished relations.',
+    addFamilyMember: 'Add Family Member',
+    listenBio: 'Listen',
+    memoryClueLabel: 'Memory Clue:',
+    fullName: 'Full Name',
+    relationship: 'Relationship',
+    hometown: 'Hometown',
+    photoUrl: 'Photo URL',
+
+    // Medication & Hydration
+    medicationTitle: 'Daily Medicines & Hydration Schedule',
+    medicationSubtitle: 'Simple daily reminder tracker for prescribed medicines and healthy hydration.',
+    waterGoal: 'Goal: 8 fresh glasses daily to support cognitive clarity and vitality',
+    waterUnit: 'Glasses',
+    addGlass: '+1 Glass Water',
+    todaysMeds: "Today's Medicines",
+    completed: 'completed',
+    taken: 'Taken',
+    tapToConfirm: 'Tap to confirm',
+
+    // Calming Sanctuary
+    calmingTitle: 'Calming Sanctuary',
+    calmingSubtitle: 'Soothing evening sanctuary with guided breathing pacer and natural soundscapes.',
+    sundowningBadge: 'Evening Calm',
+    breatheIn: 'Breathe In Slowly',
+    breatheHold: 'Hold Gently',
+    breatheOut: 'Breathe Out Calmly',
+    playNatureSounds: 'Play Soothing Nature Sounds',
+    soundRain: 'Rainfall',
+    soundLake: 'Lake Ripples',
+    soundBell: 'Temple Bell',
+    soundFlute: 'Horn Flute',
+
+    // SafeCard SOS
+    safeCardSafeTitle: 'You Are Completely Safe!',
+    safeCardSafeSubtitle: 'Take a slow, deep breath. If you are feeling confused, show this card to anyone.',
+    whoAmI: 'Who Am I?',
+    whereIsHome: 'Where Is My Home?',
+    whoToCall: 'Who To Call?',
+    liveGps: 'Live GPS Beacon Active',
+
+    // Language Modal
+    chooseLanguageTitle: 'Choose Your Language',
+    chooseLanguageSubtitle: 'Select your preferred language to customize your SmritiSetu NER experience',
+    startInLanguage: 'Start in this Language',
+  },
+
+  as: {
+    back: 'ঘূৰি যাওক',
+    home: 'ঘৰলৈ',
+    playAgain: 'পুনৰ খেলক',
+    moves: 'চাল',
+    level: 'স্তৰ',
+    score: 'স্ক’ৰ',
+    question: 'প্ৰশ্ন',
+    hint: 'ইঙ্গিত দেখুৱাওক',
+    hideHint: 'ইঙ্গিত লুকুৱাওক',
+    offlineReady: 'অফলাইন সাজু',
+    elderlyMode: 'জেষ্ঠ্যজনৰ ম’ড',
+    caregiverMode: 'সেৱাদানকাৰীৰ ম’ড',
+    sos: 'জৰুৰী সহায়',
+    readAloud: 'পঢ়ি শুনক',
+    continue: 'আগলৈ যাওক',
+    save: 'সংৰক্ষণ কৰক',
+    cancel: 'বাতিল কৰক',
+
+    // Elderly Home
+    today: 'আজি',
+    elderlyGreetingSubtitle: 'আজি মন আনন্দিত ৰাখক আৰু শান্তিত সময় কটাওক।',
+    waterWidgetTitle: 'পানী খোৱাৰ হিচাপ',
+    waterWidgetAction: 'ঔষধ আৰু পানী ➔',
+    tile1Title: '১. খেল খেলক',
+    tile1Subtitle: 'জাপি স্মৃতি জোৰা, চাহ বাগিচাৰ পাত চিঙা আৰু পাহাৰীয়া সাঁথৰ',
+    tile1Badge: '৭ টা খেল',
+    tile2Title: '২. মোৰ পৰিয়াল আৰু পুৰণি স্মৃতি',
+    tile2Subtitle: 'সন্তান-নাতি-নাতিনীৰ মৰমৰ ফটো আৰু অতীতৰ সুমধুৰ সোঁৱৰণি',
+    tile2Badge: 'এলবাম',
+    tile3Title: '৩. শান্তি আৰু মন জুৰোৱা কোঠা',
+    tile3Subtitle: 'সন্ধিয়াৰ শান্তিময় বৰষুণৰ শব্দ, উশাহ-নিশাহৰ ব্যায়াম আৰু প্ৰকৃতি',
+    tile3Badge: 'মন শান্ত কৰক',
+    sosHelpTitle: 'মোক সহায় কৰক!',
+    sosHelpSubtitle: 'মই ক’ত আছোঁ? মোৰ ঘৰ আৰু পৰিয়ালক ফোন কৰক',
+
+    // Games Hub
+    gamesHubBadge: '৭ টা জ্ঞানবিকাশৰ খেল',
+    gamesHubTitle: 'জ্ঞানবিকাশৰ খেলসমূহ',
+    gamesHubSubtitle: 'স্মৃতি, মনোযোগ, যুক্তি আৰু আনন্দ বঢ়াবলৈ উত্তৰ-পূৰ্বাঞ্চলৰ সংস্কৃতিৰে সজোৱা খেল।',
+    playGameAction: 'খেলিবলৈ স্পৰ্শ কৰক',
+
+    // Memory Match
+    memoryMatchTitle: 'ঐতিহ্য স্মৃতি জোৰা',
+    memoryMatchFamilyTitle: 'আপোনজন স্মৃতি জোৰা',
+    memoryMatchSubtitle: 'পাতবোৰ ওলোটাই ঐতিহ্যমণ্ডিত সম্পদসমূহৰ জোৰা মিলাওক!',
+    culturalArtifacts: 'ঐতিহাসিক সম্পদ',
+    familyPhotos: 'পৰিয়ালৰ ফটো',
+    touchToFlip: 'স্পৰ্শ কৰক',
+    matched: 'মিলিছে',
+    memoryWonTitle: 'অসাধাৰণ! আপুনি জিকিলে! 🎉',
+    memoryWonSubtitle: 'আপুনি সকলো সম্পদ সঠিকভাৱে মিলালে।',
+
+    // Tea Garden Focus
+    teaGardenTitle: 'চাহ বাগিচাৰ মনোযোগ',
+    teaGardenSubtitle: 'দুটি পাত এটি কলি ওলোৱাৰ লগে লগে চিঙক!',
+    teaGardenPluck: 'চিঙক!',
+    teaGardenCaterpillar: 'নচুৱাব',
+    teaGardenReady: 'চাহ পাত তুলিবলৈ সাজু নে?',
+    teaGardenStartPrompt: 'অসমৰ শান্তিময় চাহ বাগিচাত আপোনাৰ মনোযোগ আৰু ক্ষিপ্ৰতা পৰীক্ষা কৰক।',
+    startGame: 'খেল আৰম্ভ কৰক',
+    teaGardenFinishedTitle: 'সময় সমাপ্ত! বৰ সুন্দৰ!',
+    teaLeavesCount: 'চাহ পাত',
+    leavesBasket: 'ডলা',
+    reactionSpeed: 'প্ৰতিক্ৰিয়াৰ গতি',
+    accuracy: 'সঠিকতা',
+    teaGardenBudsPlucked: 'চিঙা কুঁহি পাত',
+    teaGardenCaterpillarsAvoided: 'এৰাই চলা পলু',
+    teaGardenLeavesMissed: 'হেৰুওৱা পাত',
+    teaGardenCaution: 'সাৱধান! পলু!',
+    teaGardenGreatJob: 'বৰ সুন্দৰ! আপোনাৰ পাচি সতেজ চাহ পাতেৰে ভৰি পৰিল!',
+
+    // Brain Quest
+    brainQuestTitle: 'পাহাৰীয়া সাঁথৰ',
+    brainQuestSubtitle: 'যুক্তিবোধ আৰু উত্তৰ-পূৰ্বাঞ্চলৰ লোকজ্ঞান',
+    brainQuestSolvedTitle: 'সাঁথৰ ভঙা সম্পূৰ্ণ হ’ল! 🎉',
+
+    // Pattern Weave
+    patternWeaveTitle: 'তাঁতশালৰ ফুল',
+    warpWeft: 'তাঁতৰ সূতাৰ চানেকি',
+    whichMotif: 'তলৰ কোনটো ফুল ইয়াত বহিব?',
+    patternWeaveWonTitle: 'তাঁতশাল বোৱা সম্পূৰ্ণ হ’ল! 🌸',
+
+    // Routine Builder
+    routineBuilderTitle: 'দৈনন্দিন সূচী সজোৱা',
+    routineBuilderSubtitle: 'পুৱাৰ পৰা সন্ধিয়ালৈ দিনটোৰ কামবোৰ সঠিক সময়ৰ ক্ৰমত সজাওক!',
+    checkOrder: 'ক্ৰম পৰীক্ষা কৰক',
+    routineWonTitle: 'অপূৰ্ব! সকলো কাম নিঁখুতভাৱে সজাইছে! 🌟',
+    routineWonSubtitle: 'আপোনাৰ দৈনন্দিন সময়জ্ঞান সুন্দৰ আৰু স্পষ্ট।',
+    reShuffle: 'পুনৰ সজাওক',
+
+    // Sounds of Hills
+    soundsHillsTitle: 'পাহাৰৰ সুৰ',
+    soundsHillsSubtitle: 'পৰম্পৰাগত সুৰ শুনক আৰু কিহৰ শব্দ চিনি উলিয়াওক!',
+    listenSound: 'শব্দ শুনক',
+    soundPlaying: 'শব্দ বাজিছে...',
+    touchToPlaySound: 'শব্দ শুনিবলৈ ওপৰৰ বুটাম স্পৰ্শ কৰক',
+    whichSoundMadeThis: 'তলৰ কোনটোৰ পৰা এই শব্দ ওলাইছে?',
+    soundsWonTitle: 'সুৰ চিনাক্তকৰণ সমাপ্ত! 🎶',
+
+    // Family Recall
+    familyRecallTitle: 'চিহ্ন আপনজন',
+    familyRecallSubtitle: 'ফটোখন চাওক আৰু আপোনাৰ মৰমৰ আত্মীয়ক চিনি পাওক!',
+    rememberPrompt: 'মনত পেলাওকচোন:',
+    whoIsThis: 'এখেত কোন হয়?',
+    familyRecallWonTitle: 'পৰিয়ালৰ মৰম চিৰকাল! ❤️',
+
+    // Family Manager
+    familyAlbumTitle: 'পৰিয়াল আৰু স্মৃতি এলবাম',
+    familyAlbumSubtitle: 'আপোন মানুহৰ সৈতে সংযোগ আৰু পুৰণি সোঁৱৰণি সুৰক্ষিত ৰাখক।',
+    addFamilyMember: 'নতুন আত্মীয় যোগ কৰক',
+    listenBio: 'শুনক',
+    memoryClueLabel: 'সহায়ক সংকেত:',
+    fullName: 'সম্পূৰ্ণ নাম',
+    relationship: 'সম্পৰ্ক',
+    hometown: 'চহৰ',
+    photoUrl: 'ফটোৰ লিংক',
+
+    // Medication & Hydration
+    medicationTitle: 'ঔষধ আৰু পানী খোৱাৰ সময়সূচী',
+    medicationSubtitle: 'নিয়মিত ঔষধ আৰু স্বাস্থ্যকৰ পানী খোৱাৰ সহজ তালিকা।',
+    waterGoal: 'লক্ষ্য: মগজু সুস্থ আৰু সতেজ ৰাখিবলৈ দৈনিক ৮ গিলাচ পানী',
+    waterUnit: 'গিলাচ',
+    addGlass: '+১ গিলাচ পানী',
+    todaysMeds: 'আজিৰ ঔষধসমূহ',
+    completed: 'সম্পূৰ্ণ',
+    taken: 'খোৱা হ’ল',
+    tapToConfirm: 'খোৱা নাই (স্পৰ্শ কৰক)',
+
+    // Calming Sanctuary
+    calmingTitle: 'শান্তিময় আশ্ৰয়',
+    calmingSubtitle: 'সন্ধিয়াৰ অশান্তি দূৰ কৰিবলৈ উশাহ-নিশাহৰ অনুশীলন আৰু প্ৰকৃতিৰ ধ্বনি।',
+    sundowningBadge: 'সন্ধিয়াৰ শান্তি',
+    breatheIn: 'উশাহ লওক',
+    breatheHold: 'ধৰি ৰাখক',
+    breatheOut: 'উশাহ এৰি দিয়ক',
+    playNatureSounds: 'মন জুৰোৱা প্ৰাকৃতিক ধ্বনি শুনক',
+    soundRain: 'বৰষুণ',
+    soundLake: 'হ্ৰদৰ পানী',
+    soundBell: 'ঘণ্টা',
+    soundFlute: 'বাঁহীৰ সুৰ',
+
+    // SafeCard SOS
+    safeCardSafeTitle: 'আপুনি নিৰাপদ আৰু সুৰক্ষিত!',
+    safeCardSafeSubtitle: 'ধীৰে উশাহ লওক। যদি বাট হেৰুৱাইছে, এই কাৰ্ডখন কাষৰ মানুহক দেখুৱাওক।',
+    whoAmI: 'মই কোন?',
+    whereIsHome: 'মোৰ ঘৰ ক’ত?',
+    whoToCall: 'কাক ফোন কৰিব?',
+    liveGps: 'লাইভ জিপিএছ সংকেত সক্ৰিয়',
+
+    // Language Modal
+    chooseLanguageTitle: 'আপোনাৰ ভাষা বাছক',
+    chooseLanguageSubtitle: 'স্মৃতিসেতু ব্যৱহাৰ কৰিবলৈ আপোনাৰ আঞ্চলিক ভাষা বাছক',
+    startInLanguage: 'এই ভাষাত আৰম্ভ কৰক',
+  },
+
+  bn: {
+    back: 'ফিরে যান',
+    home: 'হোম',
+    playAgain: 'আবার খেলুন',
+    moves: 'চাল',
+    level: 'স্তর',
+    score: 'স্কোর',
+    question: 'প্রশ্ন',
+    hint: 'ইঙ্গিত দেখুন',
+    hideHint: 'ইঙ্গিত লুকান',
+    offlineReady: 'অফলাইন প্রস্তুত',
+    elderlyMode: 'প্রবীণ মোড',
+    caregiverMode: 'সেবাদানকারী মোড',
+    sos: 'জরুরি সাহায্য',
+    readAloud: 'পড়ে শুনুন',
+    continue: 'এগিয়ে যান',
+    save: 'সংরক্ষণ করুন',
+    cancel: 'বাতিল',
+
+    // Elderly Home
+    today: 'আজ',
+    elderlyGreetingSubtitle: 'আজ মন প্রফুল্ল রাখুন এবং শান্তিতে সুন্দর সময় কাটান।',
+    waterWidgetTitle: 'জল পানের হিসাব',
+    waterWidgetAction: 'ওষুধ ও জল ➔',
+    tile1Title: '১. খেলুন',
+    tile1Subtitle: 'স্মৃতি মেলানো, চা বাগানের মনোযোগ ও ঐতিহ্যবাহী ধাঁধা',
+    tile1Badge: '৭টি খেলা',
+    tile2Title: '২. পরিবার ও স্মৃতি',
+    tile2Subtitle: 'সন্তান ও প্রিয়জনদের ছবি এবং অতীতের সুন্দর স্মৃতিকথা',
+    tile2Badge: 'অ্যালবাম',
+    tile3Title: '৩. প্রশান্তি ও স্বস্তি',
+    tile3Subtitle: 'বৃষ্টির স্নিগ্ধ শব্দ, শ্বাস-প্রশ্বাসের ব্যায়াম ও প্রকৃতি',
+    tile3Badge: 'মন শান্ত করুন',
+    sosHelpTitle: 'আমাকে সাহায্য করুন!',
+    sosHelpSubtitle: 'আমি কোথায় আছি? আমার পরিবারকে ফোন করুন',
+
+    // Games Hub
+    gamesHubBadge: '৭টি জ্ঞানবিকাশের খেলা',
+    gamesHubTitle: 'স্মৃতি ও মনোযোগের খেলা',
+    gamesHubSubtitle: 'স্মৃতি ও মনোযোগ সতেজ রাখতে উত্তর-পূর্বের সংস্কৃতিতে সাজানো খেলা।',
+    playGameAction: 'খেলতে স্পর্শ করুন',
+
+    // Memory Match
+    memoryMatchTitle: 'ঐতিহ্য স্মৃতি জোড়া',
+    memoryMatchFamilyTitle: 'আপনজন স্মৃতি জোড়া',
+    memoryMatchSubtitle: 'কার্ড উল্টে ঐতিহ্যবাহী প্রতীকের জোড়া মেলান!',
+    culturalArtifacts: 'ঐতিহাসিক সম্পদ',
+    familyPhotos: 'পরিবারের ছবি',
+    touchToFlip: 'স্পর্শ করুন',
+    matched: 'মিলেছে',
+    memoryWonTitle: 'চমৎকার! আপনি জিতেছেন! 🎉',
+    memoryWonSubtitle: 'আপনি সব কয়টি প্রতীক সঠিকভাবে মিলিয়েছেন।',
+
+    // Tea Garden Focus
+    teaGardenTitle: 'চা বাগানের মনোযোগ',
+    teaGardenSubtitle: 'দুটি পাতা একটি কুঁড়ি দেখার সাথে সাথে তুলুন!',
+    teaGardenPluck: 'তুলুন!',
+    teaGardenCaterpillar: 'ছোঁবেন না',
+    teaGardenReady: 'চা পাতা তুলতে প্রস্তুত?',
+    teaGardenStartPrompt: 'আসামের শান্তিময় চা বাগানে নিজের মনোযোগ ও গতি পরীক্ষা করুন।',
+    startGame: 'খেলা শুরু করুন',
+    teaGardenFinishedTitle: 'সময় শেষ! খুব ভালো!',
+    teaLeavesCount: 'চা পাতা',
+    leavesBasket: 'ঝুড়ি',
+    reactionSpeed: 'প্রতিক্রিয়ার গতি',
+    accuracy: 'নির্ভুলতা',
+    teaGardenBudsPlucked: 'তোলা কুঁড়ি',
+    teaGardenCaterpillarsAvoided: 'এড়ানো শুঁয়োপোকা',
+    teaGardenLeavesMissed: 'মিস হওয়া কুঁড়ি',
+    teaGardenCaution: 'সাবধান! শুঁয়োপোকা!',
+    teaGardenGreatJob: 'চমৎকার! আপনার ঝুড়ি তাজা চা পাতায় ভরে উঠেছে!',
+
+    // Brain Quest
+    brainQuestTitle: 'পাহাড়ী ধাঁধা',
+    brainQuestSubtitle: 'যুক্তিবোধ ও লোকজ্ঞান',
+    brainQuestSolvedTitle: 'ধাঁধার সমাধান সম্পূর্ণ! 🎉',
+
+    // Pattern Weave
+    patternWeaveTitle: 'তাঁতের নকশা',
+    warpWeft: 'তাঁতের বুটির ধারা',
+    whichMotif: 'পরের ঘরে কোন নকশাটি বসবে?',
+    patternWeaveWonTitle: 'তাঁত বোনা সম্পূর্ণ! 🌸',
+
+    // Routine Builder
+    routineBuilderTitle: 'দৈনন্দিন রুটিন সাজানো',
+    routineBuilderSubtitle: 'সকাল থেকে রাত পর্যন্ত কাজের সঠিক ধারাবাহিকতা সাজান!',
+    checkOrder: 'ক্রম পরীক্ষা করুন',
+    routineWonTitle: 'অপূর্ব! নির্ভুলভাবে সাজিয়েছেন! 🌟',
+    routineWonSubtitle: 'আপনার প্রাত্যহিক সময়জ্ঞান অত্যন্ত চমৎকার।',
+    reShuffle: 'পুনরায় সাজান',
+
+    // Sounds of Hills
+    soundsHillsTitle: 'পাহাড়ের সুর',
+    soundsHillsSubtitle: 'ঐতিহ্যবাহী সুর শুনুন এবং সঠিক উৎস চিহ্নিত করুন!',
+    listenSound: 'সুর শুনুন',
+    soundPlaying: 'সুর বাজছে...',
+    touchToPlaySound: 'সুর শুনতে ওপরের বোতাম চাপুন',
+    whichSoundMadeThis: 'কোনটি থেকে এই শব্দ এসেছে?',
+    soundsWonTitle: 'সুর চিহ্নিতকরণ সম্পন্ন! 🎶',
+
+    // Family Recall
+    familyRecallTitle: 'চিহ্ন আপনজন',
+    familyRecallSubtitle: 'ছবি দেখে নিজের প্রিয় পরিবারজনকে চিনুন!',
+    rememberPrompt: 'স্মরণ করুন:',
+    whoIsThis: 'ইনি কে হন?',
+    familyRecallWonTitle: 'পরিবারের ভালোবাসা চিরন্তন! ❤️',
+
+    // Family Manager
+    familyAlbumTitle: 'পরিবার ও স্মৃতি অ্যালবাম',
+    familyAlbumSubtitle: 'প্রিয়জনদের সান্নিধ্য ও স্মৃতি ধরে রাখার সহজ সংগ্রহশালা।',
+    addFamilyMember: 'নতুন স্বজন যোগ করুন',
+    listenBio: 'শুনুন',
+    memoryClueLabel: 'সহায়ক সূত্র:',
+    fullName: 'পুরো নাম',
+    relationship: 'সম্পর্ক',
+    hometown: 'শহর',
+    photoUrl: 'ছবির লিংক',
+
+    // Medication & Hydration
+    medicationTitle: 'ওষুধ ও জলপানের সময়সূচি',
+    medicationSubtitle: 'নিয়মিত ওষুধ ও পর্যাপ্ত জলপানের সহজ সহায়িকা।',
+    waterGoal: 'লক্ষ্য: মস্তিষ্কের সতেজতায় দিনে ৮ গ্লাস জল',
+    waterUnit: 'গ্লাস',
+    addGlass: '+১ গ্লাস জল',
+    todaysMeds: 'আজকের ওষুধসমূহ',
+    completed: 'সম্পন্ন',
+    taken: 'খাওয়া হয়েছে',
+    tapToConfirm: 'খাওয়া হয়নি (স্পর্শ করুন)',
+
+    // Calming Sanctuary
+    calmingTitle: 'প্রশান্তিময় আশ্রম',
+    calmingSubtitle: 'সন্ধ্যার অস্থিরতা দূর করতে মৃদু শ্বাস-প্রশ্বাস ও প্রকৃতির ধ্বনি।',
+    sundowningBadge: 'সন্ধ্যার প্রশান্তি',
+    breatheIn: 'শ্বাস নিন',
+    breatheHold: 'ধরে রাখুন',
+    breatheOut: 'শ্বাস ছাড়ুন',
+    playNatureSounds: 'শান্ত প্রকৃতির স্নিগ্ধ ধ্বনি',
+    soundRain: 'বৃষ্টির ধারা',
+    soundLake: 'হ্রদের জল',
+    soundBell: 'মন্দির ঘণ্টা',
+    soundFlute: 'বাঁশির সুর',
+
+    // SafeCard SOS
+    safeCardSafeTitle: 'আপনি সম্পূর্ণ নিরাপদ!',
+    safeCardSafeSubtitle: 'ধীরে শ্বাস নিন। দিশেহারা বোধ করলে এই কার্ডটি কাউকে দেখান।',
+    whoAmI: 'আমি কে?',
+    whereIsHome: 'আমার বাড়ি কোথায়?',
+    whoToCall: 'কাকে ফোন করবেন?',
+    liveGps: 'লাইভ জিপিএস চালু আছে',
+
+    // Language Modal
+    chooseLanguageTitle: 'আপনার ভাষা নির্বাচন করুন',
+    chooseLanguageSubtitle: 'স্মৃতিসেতু ব্যবহারের জন্য আপনার আঞ্চলিক ভাষা বেছে নিন',
+    startInLanguage: 'এই ভাষায় শুরু করুন',
+  },
+
+  hi: {
+    back: 'वापस जाएं',
+    home: 'मुख्य पृष्ठ',
+    playAgain: 'पुनः खेलें',
+    moves: 'चाल',
+    level: 'स्तर',
+    score: 'अंक',
+    question: 'प्रश्न',
+    hint: 'संकेत देखें',
+    hideHint: 'संकेत छिपाएं',
+    offlineReady: 'ऑफ़लाइन तैयार',
+    elderlyMode: 'वरिष्ठ जन मोड',
+    caregiverMode: 'देखभालकर्ता मोड',
+    sos: 'आपातकालीन सहायता',
+    readAloud: 'बोलकर सुनें',
+    continue: 'आगे बढ़ें',
+    save: 'सुरक्षित करें',
+    cancel: 'रद्द करें',
+
+    // Elderly Home
+    today: 'आज',
+    elderlyGreetingSubtitle: 'आज का दिन आपके लिए आनंदमय, सुखद और शांतिपूर्ण रहे।',
+    waterWidgetTitle: 'जल सेवन',
+    waterWidgetAction: 'दवा व पानी ➔',
+    tile1Title: '१. खेल खेलें',
+    tile1Subtitle: 'स्मृति मिलान, चाय बगान एकाग्रता और पहाड़ी पहेलियां',
+    tile1Badge: '७ खेल',
+    tile2Title: '२. परिवार व स्मृतियां',
+    tile2Subtitle: 'प्रियजनों की तस्वीरें और जीवन के सुनहरे संस्मरण',
+    tile2Badge: 'एल्बम',
+    tile3Title: '३. शांति एवं सुकून',
+    tile3Subtitle: 'सुकून भरी बारिश की आवाजें, श्वास व्यायाम और प्रकृति',
+    tile3Badge: 'मन शांत करें',
+    sosHelpTitle: 'मेरी सहायता करें!',
+    sosHelpSubtitle: 'मैं कहाँ हूँ? मेरे परिवार को तुरंत फोन करें',
+
+    // Games Hub
+    gamesHubBadge: '७ संज्ञानात्मक खेल',
+    gamesHubTitle: 'स्मृति व एकाग्रता खेल',
+    gamesHubSubtitle: 'स्मृति, ध्यान और तर्कशक्ति बढ़ाने वाले पूर्वोत्तर संस्कृति से जुड़े खेल।',
+    playGameAction: 'खेलने के लिए स्पर्श करें',
+
+    // Memory Match
+    memoryMatchTitle: 'सांस्कृतिक स्मृति मिलान',
+    memoryMatchFamilyTitle: 'पारिवारिक स्मृति मिलान',
+    memoryMatchSubtitle: 'कार्ड पलटकर सांस्कृतिक धरोहरों के जोड़े मिलाएं!',
+    culturalArtifacts: 'सांस्कृतिक धरोहर',
+    familyPhotos: 'पारिवारिक तस्वीरें',
+    touchToFlip: 'स्पर्श करें',
+    matched: 'मिलान हुआ',
+    memoryWonTitle: 'शानदार! आप जीत गए! 🎉',
+    memoryWonSubtitle: 'आपने सभी धरोहरों के सही जोड़े मिला लिए हैं।',
+
+    // Tea Garden Focus
+    teaGardenTitle: 'चाय बगान ध्यान व फुर्ती',
+    teaGardenSubtitle: 'हरी-भरी कोमल चाय की पत्तियों को आते ही तुरंत स्पर्श करें!',
+    teaGardenPluck: 'चुनें!',
+    teaGardenCaterpillar: 'न छुएं',
+    teaGardenReady: 'चाय पत्तियां चुनने के लिए तैयार हैं?',
+    teaGardenStartPrompt: 'असम के शांत चाय बागानों में अपनी फुर्ती और एकाग्रता परखें।',
+    startGame: 'खेल शुरू करें',
+    teaGardenFinishedTitle: 'समय समाप्त! बहुत बढ़िया!',
+    teaLeavesCount: 'चाय पत्तियां',
+    leavesBasket: 'टोकरी',
+    reactionSpeed: 'प्रतिक्रिया गति',
+    accuracy: 'सटीकता',
+    teaGardenBudsPlucked: 'चुनी गई पत्तियां',
+    teaGardenCaterpillarsAvoided: 'बचे हुए कीड़े',
+    teaGardenLeavesMissed: 'छूटी पत्तियां',
+    teaGardenCaution: 'सावधान! कीड़ा!',
+    teaGardenGreatJob: 'बहुत बढ़िया! आपकी टोकरी ताज़ी पत्तियों से भर गई है!',
+
+    // Brain Quest
+    brainQuestTitle: 'पहाड़ी पहेलियां',
+    brainQuestSubtitle: 'तार्किक चिंतन व लोककथाएं',
+    brainQuestSolvedTitle: 'पहेलियां हल हुईं! 🎉',
+
+    // Pattern Weave
+    patternWeaveTitle: 'हथकरघा बुनाई पैटर्न',
+    warpWeft: 'हथकरघा बुनाई क्रम',
+    whichMotif: 'अगला कौन सा पैटर्न आएगा?',
+    patternWeaveWonTitle: 'बुनाई पैटर्न पूर्ण हुआ! 🌸',
+
+    // Routine Builder
+    routineBuilderTitle: 'दैनिक दिनचर्या क्रम',
+    routineBuilderSubtitle: 'सुबह से रात तक की दिनचर्या को सही क्रम में व्यवस्थित करें!',
+    checkOrder: 'क्रम जांचें',
+    routineWonTitle: 'अद्भुत! दिनचर्या एकदम सही क्रम में है! 🌟',
+    routineWonSubtitle: 'आपका समय ज्ञान और संतुलन बहुत सटीक है।',
+    reShuffle: 'पुनः व्यवस्थित करें',
+
+    // Sounds of Hills
+    soundsHillsTitle: 'पहाड़ों की धुन व आवाजें',
+    soundsHillsSubtitle: 'पारंपरिक धुन सुनें और पहचानें कि यह किसकी आवाज है!',
+    listenSound: 'धुन सुनें',
+    soundPlaying: 'आवाज बज रही है...',
+    touchToPlaySound: 'आवाज सुनने के लिए ऊपर का बटन दबाएं',
+    whichSoundMadeThis: 'यह आवाज किस स्रोत की है?',
+    soundsWonTitle: 'पहचान पूर्ण हुई! 🎶',
+
+    // Family Recall
+    familyRecallTitle: 'पहचानें अपने प्रियजन',
+    familyRecallSubtitle: 'तस्वीर देखें और अपने प्रिय परिवारजन को पहचानें!',
+    rememberPrompt: 'याद करें:',
+    whoIsThis: 'यह प्रियजन कौन हैं?',
+    familyRecallWonTitle: 'परिवार का स्नेह सदैव अमर है! ❤️',
+
+    // Family Manager
+    familyAlbumTitle: 'परिवार एवं स्मृति एल्बम',
+    familyAlbumSubtitle: 'अपनों की आत्मीय यादों को सुरक्षित रखने का सुंदर संग्रह।',
+    addFamilyMember: 'नया सदस्य जोड़ें',
+    listenBio: 'सुनें',
+    memoryClueLabel: 'याद दिलाने वाला संकेत:',
+    fullName: 'पूरा नाम',
+    relationship: 'रिश्ता',
+    hometown: 'शहर',
+    photoUrl: 'तस्वीर लिंक',
+
+    // Medication & Hydration
+    medicationTitle: 'दवा व जल सेवन समयसारिणी',
+    medicationSubtitle: 'दैनिक दवाओं और स्वस्थ जल सेवन का सरल ट्रैकर।',
+    waterGoal: 'लक्ष्य: मानसिक ताजगी के लिए प्रतिदिन ८ गिलास जल',
+    waterUnit: 'गिलास',
+    addGlass: '+१ गिलास जल',
+    todaysMeds: 'आज की दवाइयां',
+    completed: 'पूर्ण',
+    taken: 'ली गई',
+    tapToConfirm: 'नहीं ली (स्पर्श करें)',
+
+    // Calming Sanctuary
+    calmingTitle: 'शांति एवं सुकून कक्ष',
+    calmingSubtitle: 'शाम की बेचैनी दूर करने के लिए सुखद श्वास व्यायाम और प्राकृतिक ध्वनियां।',
+    sundowningBadge: 'संध्या शांति',
+    breatheIn: 'धीरे सांस लें',
+    breatheHold: 'सांस रोकें',
+    breatheOut: 'सांस छोड़ें',
+    playNatureSounds: 'सुकून भरी प्राकृतिक ध्वनियां',
+    soundRain: 'बारिश',
+    soundLake: 'झील की लहरें',
+    soundBell: 'मंदिर की घंटी',
+    soundFlute: 'बांसुरी की धुन',
+
+    // SafeCard SOS
+    safeCardSafeTitle: 'आप पूरी तरह सुरक्षित हैं!',
+    safeCardSafeSubtitle: 'धीमी सांस लें। यदि उलझन महसूस हो, तो यह कार्ड किसी को भी दिखाएं।',
+    whoAmI: 'मैं कौन हूँ?',
+    whereIsHome: 'मेरा घर कहाँ है?',
+    whoToCall: 'किसे फोन करें?',
+    liveGps: 'लाइव जीपीएस सक्रिय है',
+
+    // Language Modal
+    chooseLanguageTitle: 'अपनी भाषा चुनें',
+    chooseLanguageSubtitle: 'स्मृति सेतु का उपयोग करने के लिए अपनी पसंदीदा भाषा चुनें',
+    startInLanguage: 'इस भाषा में शुरू करें',
+  },
+
+  mni: {
+    back: 'Hallak-u',
+    home: 'Yum',
+    playAgain: 'Amukta Khelsi',
+    moves: 'Moves',
+    level: 'Thak',
+    score: 'Score',
+    question: 'Wahang',
+    hint: 'Hint Yenbiyu',
+    hideHint: 'Hint Lottuna Thammu',
+    offlineReady: 'Offline Ready',
+    elderlyMode: 'Ahal gi Mode',
+    caregiverMode: 'Caregiver Mode',
+    sos: 'Mateng Pangbiyu',
+    readAloud: 'Taba',
+    continue: 'Chatthasi',
+    save: 'Thammu',
+    cancel: 'Cancel',
+
+    // Elderly Home
+    today: 'Ngasi',
+    elderlyGreetingSubtitle: 'Ngasi numit ashi haraona amadi ing-chikna leiyu.',
+    waterWidgetTitle: 'Ishing thakpa',
+    waterWidgetAction: 'Hidak & Ishing ➔',
+    tile1Title: '1. Masanna Khelba',
+    tile1Subtitle: 'Memory match, tea garden amadi riddles',
+    tile1Badge: 'Khel 7',
+    tile2Title: '2. Imung & Ningsingba',
+    tile2Subtitle: 'Imunggi photo amadi ningsingba wari',
+    tile2Badge: 'Album',
+    tile3Title: '3. Calming Sanctuary',
+    tile3Subtitle: 'Nongju khonjel amadi shafaba shaktam',
+    tile3Badge: 'Calm',
+    sosHelpTitle: 'Ei mateng pangbiyu!',
+    sosHelpSubtitle: 'Ei kadaida leige? Imungda call toubiyu',
+
+    // Games Hub
+    gamesHubBadge: 'Cognitive Domains 7',
+    gamesHubTitle: 'Cognitive Games',
+    gamesHubSubtitle: 'Northeast culture da yumbam oiba masanna kayani.',
+    playGameAction: 'Khelba houba',
+
+    // Memory Match
+    memoryMatchTitle: 'Cultural Memory Match',
+    memoryMatchFamilyTitle: 'Imunggi Photo Match',
+    memoryMatchSubtitle: 'Card sing leithoktuna match oiba thiyu!',
+    culturalArtifacts: 'Cultural Pots',
+    familyPhotos: 'Imunggi Photo',
+    touchToFlip: 'Touch toubiyu',
+    matched: 'Manneda',
+    memoryWonTitle: 'Yamna Fai! Nang Mayam Thire! 🎉',
+    memoryWonSubtitle: 'Nang pot pumba chumna thire.',
+
+    // Tea Garden Focus
+    teaGardenTitle: 'Tea Garden Focus',
+    teaGardenSubtitle: 'Mana aniga koli amaga thengnadana loukhat-u!',
+    teaGardenPluck: 'Loukhat-u!',
+    teaGardenCaterpillar: 'Sokkanu',
+    teaGardenReady: 'Cha mana hekpa hougadro?',
+    teaGardenStartPrompt: 'Assamgi cha garden da focus check toubiyu.',
+    startGame: 'Khelba Houro',
+    teaGardenFinishedTitle: 'Matam Loire! Yamna Fai!',
+    teaLeavesCount: 'Cha Mana',
+    leavesBasket: 'Basket',
+    reactionSpeed: 'Reaction Speed',
+    accuracy: 'Accuracy',
+    teaGardenBudsPlucked: 'Loukhatkhraba Mana',
+    teaGardenCaterpillarsAvoided: 'Avoid Toukhraba Til',
+    teaGardenLeavesMissed: 'Miss Oikhraba',
+    teaGardenCaution: 'Cheksillu! Til!',
+    teaGardenGreatJob: 'Yamna Fai! Nanggi basket cha managa thalle!',
+
+    // Brain Quest
+    brainQuestTitle: 'Hill Riddles',
+    brainQuestSubtitle: 'Logic & Hill Folktales',
+    brainQuestSolvedTitle: 'Riddles Loire! 🎉',
+
+    // Pattern Weave
+    patternWeaveTitle: 'Pattern Weave',
+    warpWeft: 'Handloom Pattern Sequence',
+    whichMotif: 'Mathangda karamba pattern yaogadge?',
+    patternWeaveWonTitle: 'Pattern Loire! 🌸',
+
+    // Routine Builder
+    routineBuilderTitle: 'Daily Routine Builder',
+    routineBuilderSubtitle: 'Numit pumbagi thabak pareng saba!',
+    checkOrder: 'Pareng Yengbiyu',
+    routineWonTitle: 'Afeeba! Pareng Pumba Chumna Leire! 🌟',
+    routineWonSubtitle: 'Nanggi circadian temporal orientation fajei.',
+    reShuffle: 'Amuk Sasi',
+
+    // Sounds of Hills
+    soundsHillsTitle: 'Sounds of Hills',
+    soundsHillsSubtitle: 'Khonjel taraga karigino thiyu!',
+    listenSound: 'Khonjel Tasi',
+    soundPlaying: 'Khonjel thokkiri...',
+    touchToPlaySound: 'Khonjel tanaba button nammu',
+    whichSoundMadeThis: 'Madugi khonjel karigino?',
+    soundsWonTitle: 'Khonjel Sak Khangba Loire! 🎶',
+
+    // Family Recall
+    familyRecallTitle: 'Imunggi Mi Sak Khangba',
+    familyRecallSubtitle: 'Photo yengtuna nungshiba mi sak khangbiyu!',
+    rememberPrompt: 'Ningsingbiyu:',
+    whoIsThis: 'Mi ashi kanano?',
+    familyRecallWonTitle: 'Imunggi Nungshiba Mathang Mathang! ❤️',
+
+    // Family Manager
+    familyAlbumTitle: 'Imung & Memory Album',
+    familyAlbumSubtitle: 'Imunggi nungshiba mi kayaga wari sanaba.',
+    addFamilyMember: 'Mi Anouba Happro',
+    listenBio: 'Tasi',
+    memoryClueLabel: 'Ningsingba clue:',
+    fullName: 'Ming Pumba',
+    relationship: 'Marol',
+    hometown: 'Lamlai / Khul',
+    photoUrl: 'Photo Link',
+
+    // Medication & Hydration
+    medicationTitle: 'Hidak & Ishing Thakpa Schedule',
+    medicationSubtitle: 'Nongmagi hidak amadi ishing thakpagi tracker.',
+    waterGoal: 'Goal: Wakhal fahanbada nongmata ishing glass 8',
+    waterUnit: 'Glass',
+    addGlass: '+1 Glass Ishing',
+    todaysMeds: 'Ngasigi Hidak',
+    completed: 'loire',
+    taken: 'Chare',
+    tapToConfirm: 'Chadri (touch toubiyu)',
+
+    // Calming Sanctuary
+    calmingTitle: 'Calming Sanctuary',
+    calmingSubtitle: 'Numidang ing-chikna leinaba breathing amadi khonjel.',
+    sundowningBadge: 'Evening Calm',
+    breatheIn: 'Inhale toubiyu',
+    breatheHold: 'Hold toubiyu',
+    breatheOut: 'Exhale toubiyu',
+    playNatureSounds: 'Nature Khonjel Tasi',
+    soundRain: 'Nongju',
+    soundLake: 'Pat Ishing',
+    soundBell: 'Laisang Bell',
+    soundFlute: 'Pepa Khonjel',
+
+    // SafeCard SOS
+    safeCardSafeTitle: 'Nang Mapung Fana Safe Oire!',
+    safeCardSafeSubtitle: 'Tengthadana leiyu. Wakhal nganglapadi card ashi mi amada utlu.',
+    whoAmI: 'Ei Kanano?',
+    whereIsHome: 'Eigi Yum Kadaidano?',
+    whoToCall: 'Kanada Call Tougadge?',
+    liveGps: 'Live GPS Active',
+
+    // Language Modal
+    chooseLanguageTitle: 'Nanggi Lon Khanbiyu',
+    chooseLanguageSubtitle: 'SmritiSetu NER sijinaba hougadaba lon khanbiyu',
+    startInLanguage: 'Lon Ashida Houro',
+  },
+};
+
+import { t as centralizedT } from '../i18n';
+
+export function t(key: string, lang: Language = 'en', params?: Record<string, string | number>): string {
+  const result = centralizedT(key, lang, params);
+  if (result && result !== key) return result;
+  const dict = UI_STRINGS[lang] || UI_STRINGS.en;
+  return dict[key] || UI_STRINGS.en[key] || key;
+}
+
+export default t;
