@@ -97,7 +97,7 @@ export const DailyAISummaryCard: React.FC<DailyAISummaryCardProps> = ({
   };
 
   const getSleepText = () => {
-    const q = vitals?.sleepQuality === 'good' ? (summaryTexts.sleepQualityGood[language] || 'restful') : (summaryTexts.sleepQualityFair[language] || 'fair');
+    const q = vitals?.sleepQuality === 'restful' ? (summaryTexts.sleepQualityGood[language] || 'restful') : (summaryTexts.sleepQualityFair[language] || 'fair');
     switch (language) {
       case 'hi': return <>पिछली रात आप <strong>{sleepH} घंटे {sleepM} मिनट</strong> सोए ({q})।</>;
       case 'as': return <>যোৱা ৰাতি আপুনি <strong>{sleepH} ঘণ্টা {sleepM} মিনিট</strong> শুইছিল ({q})।</>;
