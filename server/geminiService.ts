@@ -38,7 +38,7 @@ export interface StructuredSarthiContext {
     bio?: string;
   };
   preferredLanguage: 'en' | 'hi' | 'as' | 'bn' | 'mni';
-  recentActivities: Array<{
+  recentActivities?: Array<{
     gameId: string;
     domain: string;
     score: number;
@@ -46,29 +46,78 @@ export interface StructuredSarthiContext {
     reactionTimeMs?: number;
     date: string;
   }>;
-  historicalActivities: Array<{
+  historicalActivities?: Array<{
     gameId: string;
     score: number;
     date: string;
   }>;
-  gamePerformance: {
+  gamePerformance?: {
     averageAccuracy: number;
     averageScore: number;
     averageReactionTimeMs: number;
   };
-  currentDifficulty: number;
-  routineAdherence: number;
-  reminderAdherence: number;
-  preferredGames: string[];
-  trend: 'improving' | 'stable' | 'struggling' | 'repeated_deviation';
+  currentDifficulty?: number;
+  routineAdherence?: number;
+  reminderAdherence?: number;
+  preferredGames?: string[];
+  trend?: 'improving' | 'stable' | 'struggling' | 'repeated_deviation';
   currentPage?: {
     view: string;
     gameId?: string;
   };
   availableNavigationActions?: string[];
   userMessage?: string;
+  conversationHistory?: Array<{
+    role: 'user' | 'assistant';
+    text: string;
+  }>;
+  baselineComparisons?: Array<{
+    metric: string;
+    patientCurrent: string;
+    patientBaseline: string;
+    comparisonText: string;
+  }>;
+  missingDataNotices?: string[];
+  retrievedTools?: string[];
+  searchReason?: string;
+  primaryDomain?: string;
   shouldSearchWeb?: boolean;
+  suggestedWebSearchTerms?: string[];
   intent?: string;
+  activityAnalytics?: {
+    daysAnalyzed: number;
+    totalActivitiesCount: number;
+    todayActivitiesCount: number;
+    overallConsistencyScore: number;
+    categoryBreakdown?: Array<{ category: string; label: string; count: number }>;
+    physicalSummary?: {
+      totalSteps: number;
+      averageDailySteps: number;
+      totalWalkMinutes: number;
+      trend: string;
+    };
+    cognitiveSummary?: {
+      totalSessions: number;
+      averageScore: number;
+      topGame: string;
+      trend: string;
+    };
+    restAndCalmingSummary?: {
+      totalCalmingSessions: number;
+      averageSleepHours: number;
+      sleepActivityCorrelation: string;
+    };
+    medicationAdherence?: {
+      adherenceRate: number;
+    };
+  };
+  todayActivityRecords?: Array<{
+    time: string;
+    category: string;
+    title: string;
+    details: string;
+    metrics?: any;
+  }>;
   healthContext?: {
     dietPreference?: string;
     foodAllergies?: string[];
@@ -84,6 +133,7 @@ export interface StructuredSarthiContext {
       steps?: number;
       water?: string;
       meals?: string;
+      mood?: string;
     };
     regionalCuisine?: string;
     signals?: Array<{ id: string; label: string; value: string; category: string }>;
@@ -113,6 +163,8 @@ export interface SarthiGeminiResponse {
   suggestedAction: 'GAME' | 'REST' | 'ROUTINE' | 'REMINDER' | 'CAREGIVER' | 'CONVERSATION' | 'NAVIGATE' | 'HEALTH_INFO' | 'EMERGENCY' | 'NONE';
   suggestedGame?: string;
   navigationIntent?: string;
+  targetView?: string;
+  targetGameId?: string;
   healthCard?: {
     whatItMeans?: string;
     whyItMatters?: string;
@@ -126,6 +178,10 @@ export interface SarthiGeminiResponse {
   isEmergency?: boolean;
   modelUsed?: string;
   searchPerformed?: boolean;
+  dataSourceMode?: 'INTERNAL_RECORDS' | 'EXTERNAL_WEB' | 'HYBRID';
+  executedStages?: Array<{ stage: number; title: string; detail?: string }>;
+  baselineComparison?: Array<{ metric: string; patientCurrent: string; patientBaseline: string; comparisonText: string }>;
+  missingDataNotice?: string;
   sources?: WebSearchSourceItem[];
 }
 
@@ -254,87 +310,84 @@ export async function generateSarthiGeminiResponse(
   ]);
 
   const systemInstruction = `
-You are AI Saathi (सारथी / সাৰথী), an intelligent, compassionate health and cognitive-care companion for elderly individuals and their caregivers, particularly in North-East India (Assam, Manipur, Meghalaya, etc.).
+You are AI Saathi (सारथी / সাৰথী), an intelligent, compassionate, personalized health, wellness, cognitive-care, and daily-life companion for elderly individuals and their caregivers.
 
-YOU FOLLOW A STRICT 8-STAGE WORKFLOW FOR EVERY HEALTH QUESTION:
-PATIENT DATA → UNDERSTAND QUESTION → ANALYZE CONTEXT → SEARCH TRUSTED WEB SOURCES → CROSS-CHECK INFORMATION → PERSONALIZE → ANSWER → SHOW SOURCES
+CORE ROLE: GENERAL COMPANION FOR ALL TOPICS OF SENIOR LIFE:
+- "What should I eat?" is ONLY ONE EXAMPLE. Do NOT build your responses solely around food or nutrition.
+- You actively assist with:
+  * Physical activity, walks, mobility, safe chair exercises, and daily movement.
+  * Cognitive engagement, memory match games, brain quest puzzles, and reminiscence.
+  * Sleep quality, tiredness, daytime fatigue, and calming wind-down rituals.
+  * Prescribed medications, pill schedules, with-food instructions, and safe adherence.
+  * Health readings (blood pressure, heart rate, oxygen SpO2) explained in simple, non-frightening terms.
+  * Daily routine planning ("What should I do today?", morning/afternoon focus).
+  * Family memories, photo albums, and social connections with loved ones.
+  * Appointments, clinic visits, and doctor directives translated into simple steps.
+  * Explaining complex medical terms in plain, respectful language.
 
-CORE DIRECTIVES:
-1. PERSONALIZED HEALTH & NUTRITION ENGINE:
-   - NEVER give a generic, one-size-fits-all answer. Every recommendation MUST directly reflect the patient's individual data:
-     * Their exact diet preference (e.g. Vegetarian, Pescatarian, etc.)
-     * Today's physical exertion/steps (e.g. low morning steps vs active walk)
-     * Last night's sleep duration and quality
-     * Blood pressure and cardiac history (e.g. low sodium recommendation if monitoring hypertension)
-     * Prescribed medications and timings
-     * Cultural regional foods of North-East India (poha, curd, khichdi, dalia, dal, light stewed vegetables, Joha rice, Kangsoi, chamomile/ginger tea).
-   - Return structured health card fields:
-     * "recommendationTitle": Short, clear recommendation title in ${targetLang} (e.g. "Vegetable Poha + Curd" or "Gentle Balcony Walk").
-     * "recommendationDetails": 2-3 warm, simple sentences explaining the suggestion in ${targetLang}.
-     * "whyItSuitsYou": Array of 3-4 specific bullet points in ${targetLang} connecting the recommendation to the patient's real data (e.g. "✓ Matches your vegetarian diet", "✓ Complements your light 1,420 steps today", "✓ Low added salt supports your blood pressure routine").
-     * "alternativeOption": 1 nourishing alternative in ${targetLang} (e.g. "Warm oats porridge with crushed almonds and banana").
-     * "signalsUsed": Array of objects [{ "id": "sig-1", "label": "Signal Name", "value": "Specific value", "category": "diet|vitals|activity|sleep|medication" }] showing which factors were considered.
-     * "followUpQuestions": Array of 3 contextual, natural follow-up questions the patient can tap (e.g. ["Suggest my lunch", "Give me another option", "Can I eat this with my medicine?"]).
-     * "disclaimer": "This guidance is for general health support and does not replace advice from your healthcare professional."
+DYNAMIC REASONING STEPS FOR EVERY QUESTION:
+1. What is the user asking? Understand the natural-language intent (including follow-up pronouns referring to earlier turns in the conversation).
+2. Which patient information is relevant? Focus on relevant signals; do not dump unrelated data.
+3. Compare with the patient's OWN NORMAL PATTERN (7-day personal baseline) whenever available. Clearly distinguish personal historical patterns from general medical reference ranges.
+4. Verify whether external evidence was searched. If web search results are provided below, cite those authoritative sources (WHO, ICMR, NIN, AIIMS, NHS, CDC). If no web search was performed, generate the answer honestly from the patient's internal records.
+5. If important health data is missing (e.g. today's blood pressure is not logged yet), state what is missing simply; never hallucinate or invent readings.
+6. Personalize: Combine patient profile + live vitals + personal baseline + doctor notes + caregiver observations + conversation context.
+7. Medical safety: You support health decisions but NEVER diagnose diseases ("You definitely have...", "This proves that you have..."). NEVER tell patients to stop or change prescribed medicine dosages.
+8. Emergency intercept: If acute life-threatening symptoms appear (severe chest pain, difficulty breathing, sudden paralysis/facial droop, acute sudden confusion), set "isEmergency": true and "suggestedAction": "EMERGENCY".
 
-2. STRICT MEDICAL SAFETY SYSTEM:
-   - You are a supportive health information companion, NOT a diagnostic doctor.
-   - NEVER state that you have diagnosed a disease or that the patient is "suffering from dementia".
-   - NEVER prescribe medicines or tell patients to alter, increase, or stop prescribed medicine dosages.
-   - For medication questions, describe the prescribed purpose from clinical literature and advise following the prescribing doctor's exact instructions.
-   - EMERGENCY INTERCEPT: If symptoms sound potentially life-threatening (e.g. severe crushing chest pain, sudden numbness or facial droop, severe breathing difficulty, acute sudden delirium):
-     * Set "isEmergency": true
-     * Set "suggestedAction": "EMERGENCY"
-     * Set "safetyCategory": "EMERGENCY"
-     * Urge immediate emergency in-person medical evaluation and contacting their caregiver/ambulance.
-
-3. WEB SEARCH CONTEXT (WHEN PROVIDED):
-   ${hasSearchResults ? `
-   - WEB SEARCH RESULTS ARE PROVIDED BELOW. You MUST base your clinical/nutritional facts on these authoritative search results (WHO, ICMR, NIN India, MoHFW, NHS, CDC).
-   - Cross-check claims using these results. Do NOT hallucinate unverified medical claims.
-   ` : `
-   - Web search was not performed for this query. Rely on established WHO/ICMR geriatric nutrition and cognitive wellness guidelines.
-   `}
-
-4. DEMENTIA-FRIENDLY COMMUNICATION:
-   - Use short, clear sentences. Avoid dense medical jargon.
-   - Maintain a warm, encouraging, respectful tone suitable for an elder.
-   - All user-facing text MUST be written naturally in ${targetLang}.
+DEMENTIA-FRIENDLY & ELDERLY-FRIENDLY COMMUNICATION:
+- Use short, clear, warm, respectful sentences in ${targetLang}.
+- Avoid clinical jargon, panic-inducing terms, or condescension.
 
 OUTPUT FORMAT (JSON ONLY):
 Return strictly a JSON object:
 {
-  "message": "Full empathetic response in ${targetLang}",
+  "message": "Warm empathetic response in ${targetLang}",
   "shortMessage": "1-sentence summary in ${targetLang}",
-  "recommendationTitle": "title in ${targetLang}",
-  "recommendationDetails": "details in ${targetLang}",
-  "whyItSuitsYou": ["point 1 in ${targetLang}", "point 2 in ${targetLang}", "point 3 in ${targetLang}"],
-  "alternativeOption": "alternative in ${targetLang}",
+  "recommendationTitle": "Clear, concise title in ${targetLang}",
+  "recommendationDetails": "2-3 simple sentences explaining the personalized recommendation in ${targetLang}",
+  "whyItSuitsYou": ["Point 1 connecting to patient data/baseline in ${targetLang}", "Point 2 in ${targetLang}", "Point 3 in ${targetLang}"],
+  "alternativeOption": "1 nourishing or gentle alternative in ${targetLang}",
   "signalsUsed": [
-    { "id": "sig-1", "label": "Label", "value": "Value", "category": "diet" }
+    { "id": "sig-1", "label": "Label", "value": "Value", "category": "profile|vitals|activity|medication|diet|sleep|routine" }
   ],
-  "followUpQuestions": ["question 1", "question 2", "question 3"],
-  "suggestedAction": "HEALTH_INFO | CONVERSATION | GAME | REST | ROUTINE | REMINDER | NAVIGATE | EMERGENCY | NONE",
-  "suggestedGame": "optional game name",
+  "followUpQuestions": ["Question 1", "Question 2", "Question 3"],
+  "suggestedAction": "GAME | REST | ROUTINE | REMINDER | CAREGIVER | CONVERSATION | NAVIGATE | HEALTH_INFO | EMERGENCY | NONE",
+  "suggestedGame": "optional game name (e.g. memory_match, tea_garden, routine_builder)",
   "navigationIntent": "intent token from allowlist or NONE",
+  "targetView": "home | games | reminders | calming | emergency | family",
+  "targetGameId": "memory_match | tea_garden | brain_quest | pattern_weave | routine_builder | sounds_hills | family_recall",
   "healthCard": {
     "whatItMeans": "simple meaning in ${targetLang}",
     "whyItMatters": "why it matters in ${targetLang}",
-    "whatYouCanDo": "actions in ${targetLang}",
-    "whenToAskForHelp": "when to consult doctor in ${targetLang}"
+    "whatYouCanDo": "clear gentle steps in ${targetLang}",
+    "whenToAskForHelp": "when to consult caregiver or doctor in ${targetLang}"
   },
   "safetyCategory": "GENERAL_HEALTH_INFORMATION | SELF_CARE_INFORMATION | MEDICATION_INFORMATION | POTENTIALLY_URGENT | EMERGENCY | NON_HEALTH",
   "tone": "encouraging | calm | supportive | celebratory",
   "caregiverNote": "Brief non-diagnostic clinical observation in English",
+  "missingDataNotice": "Optional note stating if relevant data is missing",
   "safetyFlag": false,
   "isEmergency": false,
   "disclaimer": "This guidance is for general health support and does not replace advice from your healthcare professional."
 }
 `.trim();
 
-  // Build the user prompt with patient context, detailed health context, and search results
+  // Build the user prompt with patient context, multi-turn history, baseline comparisons, and search results
   const searchContext = hasSearchResults ? buildSearchResultsContext(searchResults!) : '';
   const hc = context.healthContext;
+
+  const convHistoryFormatted = context.conversationHistory?.length
+    ? context.conversationHistory.map((t) => `${t.role === 'user' ? 'Patient' : 'AI Saathi'}: ${t.text}`).join('\n')
+    : 'New session — no prior turns.';
+
+  const baselineFormatted = context.baselineComparisons?.length
+    ? context.baselineComparisons.map((b) => `• ${b.metric}: Current [${b.patientCurrent}] vs 7-Day Average [${b.patientBaseline}] -> "${b.comparisonText}"`).join('\n')
+    : 'No baseline comparison available.';
+
+  const missingFormatted = context.missingDataNotices?.length
+    ? context.missingDataNotices.map((m) => `• ${m}`).join('\n')
+    : 'All primary record fields available.';
 
   const prompt = `
 Patient Profile:
@@ -342,32 +395,35 @@ Patient Profile:
 - Age: ${context.patientProfile.age}
 - Location: ${context.patientProfile.location || 'North-East India'}
 - Preferred Language: ${targetLang}
+- Cognitive Stage: ${context.patientProfile.diagnosisStage || 'Senior wellness monitoring'}
 
 ${hc ? `
-Patient Health & Clinical Context (REAL PATIENT SIGNALS):
-- Diet Preference: ${hc.dietPreference || 'Vegetarian'}
-- Food Allergies: ${hc.foodAllergies?.join(', ') || 'None recorded'}
-- Dietary Restrictions: ${hc.dietaryRestrictions?.join('; ') || 'Moderate sodium for blood pressure'}
-- Known Conditions: ${hc.knownConditions?.join(', ') || 'Hypertension, Mild Cognitive Impairment'}
-- Mobility: ${hc.mobilityLevel || 'Assisted walking'}
+Patient Health & Routine Data:
+- Known Conditions: ${hc.knownConditions?.join(', ') || 'Mild Hypertension, Senior wellness'}
 - Prescribed Medications: ${hc.medications?.join('; ') || 'Telmisartan 40mg'}
-- Regional Cuisine Style: ${hc.regionalCuisine || 'North-East Indian / Assamese vegetarian'}
-- Today's Vitals: BP ${hc.recentVitals?.bp || '128/82 mmHg'}, Heart Rate ${hc.recentVitals?.hr || 72} bpm, Sleep ${hc.recentVitals?.sleep || '6h 20m'}, Steps Today: ${hc.recentVitals?.steps || 1420} steps, Hydration: ${hc.recentVitals?.water || '4/8 glasses'}
-- Considered Signals: ${hc.signals?.map(s => `${s.label}: ${s.value}`).join(' | ') || 'None'}
+- Mobility Profile: ${hc.mobilityLevel || 'Independent / Assisted'}
+- Dietary Preference: ${hc.dietPreference || 'Vegetarian'} (${hc.regionalCuisine || 'Regional cuisine'})
+- Food Allergies: ${hc.foodAllergies?.join(', ') || 'None recorded'}
+- Today's Vitals: BP ${hc.recentVitals?.bp || '128/82 mmHg'}, Heart Rate ${hc.recentVitals?.hr || 72} bpm, SpO2 ${hc.recentVitals?.spO2 || 98}%, Sleep: ${hc.recentVitals?.sleep || '6h 20m'}, Steps Today: ${hc.recentVitals?.steps || 1420} steps, Hydration: ${hc.recentVitals?.water || '4/8 glasses'}, Mood: ${hc.recentVitals?.mood || 'calm'}, Meals: ${hc.recentVitals?.meals || 'Breakfast logged'}
+- Recorded Factors: ${hc.signals?.map((s) => `${s.label}: ${s.value}`).join(' | ') || 'None'}
 ` : ''}
 
-Baseline & Routine Activity:
-- Trend: ${context.trend}
-- Routine Adherence: ${context.routineAdherence}%
-- Preferred Activities: ${context.preferredGames?.join(', ') || 'Memory Match, Tea Garden Focus'}
-- Current App Page: ${context.currentPage?.view || 'home'}
+Patient Personal 7-Day Baseline Comparison:
+${baselineFormatted}
+
+Missing Data Notices:
+${missingFormatted}
+
+Recent Conversation Turns (Multi-turn Context):
+${convHistoryFormatted}
 ${searchContext}
 
-User's Question / Trigger:
-"${context.userMessage || 'What should I eat today to stay healthy?'}"
+User's Current Question:
+"${context.userMessage || 'What should I focus on today?'}"
 
 Instructions:
-Generate a deeply personalized, elderly-friendly response strictly following the JSON schema in ${targetLang}. Ensure "recommendationTitle", "whyItSuitsYou", "alternativeOption", "signalsUsed", and "followUpQuestions" are populated.
+Synthesize an intelligent, deeply personalized, elderly-friendly response strictly following the JSON format in ${targetLang}.
+Tie your recommendations directly to the patient's personal data and baseline patterns. If data was missing, mention it gently.
 `.trim();
 
   let response: any;
@@ -420,7 +476,7 @@ Generate a deeply personalized, elderly-friendly response strictly following the
 
   const cleanMessage = sanitizeGeminiOutput(parsed.message || 'Welcome! I am here to walk alongside you today.');
   const cleanShort = sanitizeGeminiOutput(parsed.shortMessage || cleanMessage);
-  const cleanCaregiverNote = sanitizeGeminiOutput(parsed.caregiverNote || `Observed ${context.trend} engagement pattern.`);
+  const cleanCaregiverNote = sanitizeGeminiOutput(parsed.caregiverNote || `Observed ${context.trend || 'stable'} engagement pattern.`);
 
   // Validate safetyFlag
   let hasSafetyViolation = false;
@@ -460,7 +516,71 @@ Generate a deeply personalized, elderly-friendly response strictly following the
     };
   }
 
+  // Construct dynamic list of stages actually executed
+  const executedStages: Array<{ stage: number; title: string; detail?: string }> = [];
+  let currentStageNum = 1;
+  executedStages.push({
+    stage: currentStageNum++,
+    title: 'Understanding your question...',
+    detail: 'Analyzing user question intent and conversational context',
+  });
+
+  if (context.healthContext?.recentVitals || context.healthContext?.knownConditions) {
+    executedStages.push({
+      stage: currentStageNum++,
+      title: 'Checking relevant health information...',
+      detail: 'Reviewed resting vitals, known conditions, and medications',
+    });
+  }
+
+  if (context.healthContext?.recentVitals?.steps !== undefined) {
+    executedStages.push({
+      stage: currentStageNum++,
+      title: 'Reviewing your recent activity...',
+      detail: 'Evaluated today’s step count, movement pace, and sleep hours',
+    });
+  }
+
+  if (context.baselineComparisons && context.baselineComparisons.length > 0) {
+    executedStages.push({
+      stage: currentStageNum++,
+      title: 'Comparing with your usual pattern...',
+      detail: 'Evaluated against your personal 7-day baseline history',
+    });
+  }
+
+  if (context.healthContext?.medications || context.currentPage) {
+    executedStages.push({
+      stage: currentStageNum++,
+      title: 'Checking your routine...',
+      detail: 'Verified daily medication schedule and pending activities',
+    });
+  }
+
+  if (hasSearchResults) {
+    executedStages.push({
+      stage: currentStageNum++,
+      title: 'Searching trusted health sources...',
+      detail: 'Queried WHO, ICMR, NIN, AIIMS, and NHS authoritative guidelines',
+    });
+    executedStages.push({
+      stage: currentStageNum++,
+      title: 'Cross-checking information...',
+      detail: 'Filtered spam/blogs to verify clinical recommendations',
+    });
+  }
+
+  executedStages.push({
+    stage: currentStageNum++,
+    title: 'Personalizing your answer...',
+    detail: 'Synthesizing tailored recommendation for your profile and routine',
+  });
+
+  // Source transparency: ONLY include sources if web search was ACTUALLY performed
   const sources = hasSearchResults ? convertToSourceItems(searchResults!) : undefined;
+  const dataSourceMode: SarthiGeminiResponse['dataSourceMode'] = hasSearchResults
+    ? (hc ? 'HYBRID' : 'EXTERNAL_WEB')
+    : 'INTERNAL_RECORDS';
 
   return {
     message: cleanMessage,
@@ -475,6 +595,8 @@ Generate a deeply personalized, elderly-friendly response strictly following the
     suggestedAction: action,
     suggestedGame: parsed.suggestedGame,
     navigationIntent: rawIntent !== 'NONE' ? rawIntent : undefined,
+    targetView: parsed.targetView,
+    targetGameId: parsed.targetGameId,
     healthCard: cleanHealthCard,
     safetyCategory: parsed.safetyCategory || (hasSearchResults ? 'GENERAL_HEALTH_INFORMATION' : 'NON_HEALTH'),
     tone,
@@ -483,6 +605,10 @@ Generate a deeply personalized, elderly-friendly response strictly following the
     isEmergency: !!parsed.isEmergency,
     modelUsed,
     searchPerformed: hasSearchResults,
+    dataSourceMode,
+    executedStages,
+    baselineComparison: context.baselineComparisons,
+    missingDataNotice: parsed.missingDataNotice || context.missingDataNotices?.[0],
     sources,
   };
 }

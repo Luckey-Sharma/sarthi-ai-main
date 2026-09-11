@@ -1,8 +1,7 @@
 import React from 'react';
 import { Language, PatientProfile, AppView, CognitiveSession, GameId } from '../../types';
-import { ShieldAlert, Volume2, Droplet, ArrowRight, Play, Heart } from 'lucide-react';
+import { ShieldAlert, Volume2, Droplet, ArrowRight, Play, Heart, Sparkles, Brain, Image, Calendar, Mic } from 'lucide-react';
 import { useTranslation } from '../../i18n';
-import { SarthiQuickBanner } from '../sarthi/SarthiQuickBanner';
 import { DailyAISummaryCard } from '../sarthi/DailyAISummaryCard';
 import { RecommendedForYouToday } from '../sarthi/RecommendedForYouToday';
 import { patientContextEngine } from '../../services/patientContextEngine';
@@ -43,250 +42,670 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
     return `${timeGreeting}, ${patient.name}!`;
   };
 
-  const localeCode =
-    language === 'as' ? 'as-IN' :
-    language === 'bn' ? 'bn-IN' :
-    language === 'hi' ? 'hi-IN' :
-    language === 'mni' ? 'mni-IN' : 'en-US';
-
-  const todayStr = new Intl.DateTimeFormat(localeCode, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date());
-
   const handleSpeakGreeting = () => {
     stopSpeaking();
     const text = `${getGreeting()}. ${t('elderlyHome.welcomeSubtitle')}`;
     speak(text, language);
   };
 
+  const handleLaunchAISaathi = (query?: string) => {
+    if (onOpenAISaathi) {
+      onOpenAISaathi(query);
+    } else {
+      onOpenSarthiModal();
+    }
+  };
+
+  const homeTexts: Record<string, Record<Language, string>> = {
+    heroTag: {
+      en: 'CARE TODAY FOR A BRIGHTER TOMORROW',
+      hi: 'एक बेहतर कल के लिए आज से देखभाल',
+      as: 'উজ্জ্বল ভৱিষ্যতৰ বাবে আজিৰ যত্ন',
+      bn: 'উজ্জ্বল ভবিষ্যতের জন্য আজকের যত্ন',
+      mni: 'হেন্না ফবা অকনবগীদমক ঙসি যত্ন লৌরসি',
+    },
+    heroTitle1: {
+      en: 'Good Health',
+      hi: 'उत्तम स्वास्थ्य',
+      as: 'উত্তম স্বাস্থ্য',
+      bn: 'উত্তম স্বাস্থ্য',
+      mni: 'অফবা হকশেল',
+    },
+    heroTitle2: {
+      en: 'Brighter Tomorrows',
+      hi: 'उज्ज्वल कल',
+      as: 'সুন্দৰ কাইলৈ',
+      bn: 'সুন্দর আগামী',
+      mni: 'নুংঙাইরবা কন্দললোই',
+    },
+    heroScript1: {
+      en: 'Healthy Mind',
+      hi: 'स्वस्थ मन',
+      as: 'সুস্থ মন',
+      bn: 'সুস্থ মন',
+      mni: 'হিংগৎলবা ৱাখল',
+    },
+    heroScript2: {
+      en: 'Happy Life 🌱',
+      hi: 'सुखी जीवन 🌱',
+      as: 'সুখী জীৱন 🌱',
+      bn: 'সুখী জীবন 🌱',
+      mni: 'নুংঙাইরবা পুন্সি 🌱',
+    },
+    heroDescription: {
+      en: 'Personalized cognitive care for a healthier, happier life — inspired by the culture and beauty of North East India.',
+      hi: 'स्वस्थ और खुशहाल जीवन के लिए व्यक्तिगत मानसिक देखभाल — पूर्वोत्तर भारत की संस्कृति और सौंदर्य से प्रेरित।',
+      as: 'এটি সুস্থ আৰু সুখী জীৱনৰ বাবে বিশেষ যত্ন — উত্তৰ-পূব ভাৰতৰ সংস্কৃতি আৰু সৌন্দৰ্যৰে অনুপ্ৰাণিত।',
+      bn: 'একটি স্বাস্থ্যকর ও সুখী জীবনের জন্য ব্যক্তিগত মানসিক যত্ন — উত্তর-পূর্ব ভারতের ঐতিহ্য ও সৌন্দর্যে অনুপ্রাণিত।',
+      mni: 'অফবা অমসুং নুংঙাইরবা পুন্সিগীদমক অখন্নবা ৱাখলগী যত্ন — নোংপোক ভারতকী নাৎ অমসুং মহৌশাগী ফজরবগা লোয়ননা।',
+    },
+    startTodayActivities: {
+      en: "Start Today's Activities",
+      hi: 'आज की गतिविधियाँ शुरू करें',
+      as: 'আজিৰ কাৰ্যসূচী আৰম্ভ কৰক',
+      bn: 'আজকের কার্যক্রম শুরু করুন',
+      mni: 'ঙসিগী থবকশিং হৌরো',
+    },
+    talkToAISaathi: {
+      en: 'Talk to AI Saathi',
+      hi: 'एआई साथी से बात करें',
+      as: 'এআই সাৰথীৰ সৈতে কথা পাতক',
+      bn: 'এআই সারথীর সাথে কথা বলুন',
+      mni: 'AI সাথীগা ৱারী শানৌ',
+    },
+    northEastBadge: {
+      en: 'North East India • Our Roots, Our Strength',
+      hi: 'पूर्वोत्तर भारत • हमारी जड़ें, हमारी शक्ति',
+      as: 'উত্তৰ-পূব ভাৰত • আমাৰ শিপা, আমাৰ শক্তি',
+      bn: 'উত্তর-পূর্ব ভারত • আমাদের শিকড়, আমাদের শক্তি',
+      mni: 'নোংপোক ভারত • ঐখোইগী মরম, ঐখোইগী পাঙ্গল',
+    },
+    // Core cards
+    card1Title: {
+      en: 'Play & Engage',
+      hi: 'खेलें और जुड़ें',
+      as: 'খেলক আৰু মনত পেলাওক',
+      bn: 'খেলুন ও আনন্দ নিন',
+      mni: 'শানো অমসুং পাঙ্গল থৌ',
+    },
+    card1Subtitle: {
+      en: 'Cognitive games designed for your comfort and recall.',
+      hi: 'याददाश्त और मानसिक चुस्ती के लिए विशेष खेल।',
+      as: 'মনত পেলোৱা আৰু মগজুৰ সজীৱতাৰ বাবে বিশেষ খেল।',
+      bn: 'স্মৃতিশক্তি ও মানসিক সতেজতার উপযোগী বিশেষ খেলা।',
+      mni: 'নিংশিংবা অমসুং ৱাখল লমজিংনবগীদমক অখন্নবা খেলশিং।',
+    },
+    card2Title: {
+      en: 'My Memories',
+      hi: 'मेरी यादें',
+      as: 'মোৰ স্মৃতি',
+      bn: 'আমার স্মৃতি',
+      mni: 'ঐগী নিংশিংবশিং',
+    },
+    card2Subtitle: {
+      en: 'Relive special moments, family photos and familiar places.',
+      hi: 'सुंदर पलों, पारिवारिक तस्वीरों और जाने-पहचाने स्थानों को याद करें।',
+      as: 'পৰিয়ালৰ ফটো আৰু পুৰণি স্মৃতিবোৰ পুনৰ উপভোগ কৰক।',
+      bn: 'পারিবারিক ছবি এবং ফেলে আসা সোনালী স্মৃতি রোমন্থন করুন।',
+      mni: 'ইমুংগী ফোতো অমসুং নিংশিংনিঙাই ওইরবা মতমশিং অমুক য়েংবা।',
+    },
+    card3Title: {
+      en: 'My Day',
+      hi: 'मेरा दिन',
+      as: 'মোৰ দিনটো',
+      bn: 'আমার দিন',
+      mni: 'ঐগী নুমিৎ',
+    },
+    card3Subtitle: {
+      en: 'Your routine, medicines, hydration and peaceful rest.',
+      hi: 'आपकी दिनचर्या, दवाइयाँ, पानी और शांतिपूर्ण विश्राम।',
+      as: 'আপোনাৰ দৈনিক ৰুটিন, ঔষধ, পানী আৰু বিশ্ৰাম।',
+      bn: 'আপনার দৈনিক রুটিন, ওষুধ, পানি ও শান্তির বিশ্রাম।',
+      mni: 'নহাক্কী নুমিৎখুদিংগী থবক, হিদাক, ঈশিং অমসুং পোথারবা।',
+    },
+    card4Title: {
+      en: 'Talk to Me',
+      hi: 'मुझसे बात करें',
+      as: 'মোৰ সৈতে কথা পাতক',
+      bn: 'কথা বলুন',
+      mni: 'ঐগা ৱারী শানৌ',
+    },
+    card4Subtitle: {
+      en: "Just speak. I'm here for you anytime with gentle guidance.",
+      hi: 'बस बोलिए। मैं हमेशा आपके मार्गदर्शन के लिए यहाँ हूँ।',
+      as: 'নিসংকোচে কওক। মই আপোনাক সহায় কৰিবলৈ সদায় সাজু।',
+      bn: 'শুধু বলুন। আপনাকে সঙ্গ ও সহায়তা দিতে আমি সবসময় পাশে আছি।',
+      mni: 'ৱারী শানবীয়ু। ঐহাক নহাকপু মতেং পাংনবা মতম চুপ্পদা লৈরি।',
+    },
+    // Discover NE
+    discoverNeTitle: {
+      en: 'Discover The North East',
+      hi: 'पूर्वोत्तर भारत की यात्रा',
+      as: 'উত্তৰ-পূবৰ চিনাকী',
+      bn: 'উত্তর-পূর্বকে জানুন',
+      mni: 'নোংপোক ভারতপু খংমিন্নসি',
+    },
+    discoverNeSubtitle: {
+      en: 'Familiar places. Local culture. Happy memories.',
+      hi: 'जाने-पहचाने स्थान। स्थानीय संस्कृति। सुखद स्मृतियाँ।',
+      as: 'চিনাকী ঠাই। স্থানীয় সংস্কৃতি। সুন্দৰ স্মৃতি।',
+      bn: 'পরিচিত স্থান। স্থানীয় ঐতিহ্য। সুখস্মৃতি।',
+      mni: 'মশক খংবা মফমশিং। লমদমগী নাৎ। নুংঙাইরবা নিংশিংবা।',
+    },
+    exploreRegionalContent: {
+      en: 'Explore Regional Content',
+      hi: 'क्षेत्रीय धरोहर देखें',
+      as: 'আঞ্চলিক সমল চাওক',
+      bn: 'আঞ্চলিক বিষয়সমূহ দেখুন',
+      mni: 'লমদমগী পোৎশকশিং য়েংঙু',
+    },
+    // Health tips
+    healthTipsHeader: {
+      en: 'Health Tips for You',
+      hi: 'आपके लिए स्वास्थ्य सुझाव',
+      as: 'আপোনাৰ বাবে স্বাস্থ্য পৰামৰ্শ',
+      bn: 'আপনার জন্য স্বাস্থ্য পরামর্শ',
+      mni: 'নহাক্কীদমক হকশেলগী পাউতাক',
+    },
+    healthTipsSubheader: {
+      en: '— Small steps for a stronger tomorrow.',
+      hi: '— एक स्वस्थ कल के लिए छोटे कदम।',
+      as: '— সুস্থ ভৱিষ্যতৰ বাবে সৰু সৰু পদক্ষেপ।',
+      bn: '— সুন্দর ভবিষ্যতের জন্য ছোট ছোট পদক্ষেপ।',
+      mni: '— ফবা কন্দললোইগীদমক অপিকপা খোংথাংশিং।',
+    },
+    seeAll: {
+      en: 'See All',
+      hi: 'सभी देखें',
+      as: 'সকলো চাওক',
+      bn: 'সব দেখুন',
+      mni: 'পুম্নমক য়েংঙু',
+    },
+    tip1Title: {
+      en: 'Stay Hydrated',
+      hi: 'पर्याप्त पानी पिएं',
+      as: 'পানী প্ৰচুৰ খাব',
+      bn: 'পরিমিত পানি পান করুন',
+      mni: 'ঈশিং নিয়ম্না থক্কদবনি',
+    },
+    tip1Desc: {
+      en: "Drink water regularly even if you don't feel thirsty.",
+      hi: 'प्यास न लगने पर भी नियमित अंतराल में पानी पिएं।',
+      as: 'পিয়াহ নালাগে যদিও নিয়মীয়াকৈ পানী খাওক।',
+      bn: 'তেষ্টা না পেলেও নির্দিষ্ট সময় অন্তর পানি পান করুন।',
+      mni: 'ঈশিং তকনিংদবসু মতম মতমদা ঈশিং থক্কদবনি।',
+    },
+    tip2Title: {
+      en: 'Keep Moving',
+      hi: 'हल्का टहलें',
+      as: 'খোজকাঢ়ক',
+      bn: 'হাঁটাহাটি করুন',
+      mni: 'খোংনা চৎপীয়ু',
+    },
+    tip2Desc: {
+      en: 'A short walk daily keeps your mind active and steady.',
+      hi: 'रोज़ाना थोड़ी सैर मन को सक्रिय और शांत रखती है।',
+      as: 'দৈনিক কিছু খোজ কাঢ়িলে মন সতেজ আৰু সুস্থ থাকে।',
+      bn: 'প্রতিদিন কিছু সময় হাঁটলে শরীর ও মন সতেজ থাকে।',
+      mni: 'নুমিৎখুদিংগী খরা চৎপনা ৱাখলবু হিংগৎহল্লি।',
+    },
+    tip3Title: {
+      en: 'Eat Local',
+      hi: 'पौष्टिक भोजन लें',
+      as: 'ঘৰুৱা খাদ্য খাওক',
+      bn: 'পুষ্টিকর দেশীয় খাবার',
+      mni: 'লমদমগী মচিন লৈবা চিন্নাবা',
+    },
+    tip3Desc: {
+      en: 'Choose nutritious, low-sodium traditional foods.',
+      hi: 'कम नमक और पौष्टिकता से भरपूर पारंपरिक भोजन चुनें।',
+      as: 'কম নিমখযুক্ত আৰু পুষ্টিকৰ পৰম্পৰাগত খাদ্য বাছক।',
+      bn: 'কম লবণযুক্ত ও পুষ্টিকর ঐতিহ্যবাহী খাবার গ্রহণ করুন।',
+      mni: 'থুম য়াম্না য়াওদবা অমসুং হকচাংদা কান্নবা চীঞ্জাক চাবীয়ু।',
+    },
+    tip4Title: {
+      en: 'Breathe & Relax',
+      hi: 'गहरी सांस लें',
+      as: 'দীঘল উশাহ লওক',
+      bn: 'গভীর শ্বাস নিন',
+      mni: 'থা য়াম্না লুনা লৌবীয়ু',
+    },
+    tip4Desc: {
+      en: 'Take deep breaths. It calms your mind and heart.',
+      hi: 'लंबी गहरी सांसें लें, यह हृदय और मस्तिष्क को शांति देती हैं।',
+      as: 'দীঘল উশাহ লওক, ই আপোনাৰ মন আৰু হৃদযন্ত্ৰ শান্ত কৰে।',
+      bn: 'ধীরে ধীরে গভীর শ্বাস নিন, এটি মন ও শরীরকে শান্ত করে।',
+      mni: 'নুংশিৎ ফনা লুনা লৌবীয়ু, মসিদা ৱাখলবু শান্তী ওইহল্লি।',
+    },
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-7 pb-20 font-sans">
-      {/* Weather & Context Greeting Banner */}
-      <div className="bg-[#ffffff] p-6 sm:p-8 rounded-3xl border border-[#becabf]/60 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="flex items-center gap-5">
+    <div className="space-y-6 min-w-0" data-purpose="primary-cognitive-feed">
+      {/* ─── HERO BANNER ─────────────────────────────────────────────────── */}
+      <section
+        className="relative rounded-[20px] overflow-hidden min-h-[310px] flex items-center border border-[rgba(70,80,60,0.08)] shadow-cognitiva"
+        data-purpose="hero-banner"
+        style={{
+          background: 'linear-gradient(135deg, #FAF6EE 0%, #F5EEE2 50%, #ECE2D0 100%)',
+        }}
+      >
+        {/* Background Scenic Imagery */}
+        <div className="absolute inset-0 z-0">
           <img
-            src={patient.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'}
-            alt={patient.name}
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border-3 border-[#bfebba] shadow-md shrink-0"
+            alt="Misty Hills of North East India with Elder in traditional peaceful terrace"
+            className="w-full h-full object-cover object-right-center"
+            src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1400&q=80"
           />
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-[#ecefea] text-[#416740] border border-[#becabf]/40">
-                <span className="material-symbols-outlined text-[16px]">wb_sunny</span>
-                <span>21°C • {patient.location || 'Guwahati, Assam'}</span>
-              </span>
-              <span className="text-xs font-semibold text-[#6f7a70]">• {todayStr}</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#032517] leading-tight">
-              {getGreeting()}
+          <div className="absolute inset-0 hero-mask"></div>
+        </div>
+
+        {/* Content Area in Hero */}
+        <div className="relative z-10 px-6 sm:px-8 py-7 max-w-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block text-[10.5px] font-bold tracking-widest uppercase text-[#52745C]">
+              {homeTexts.heroTag[language] || homeTexts.heroTag.en}
+            </span>
+            <button
+              onClick={handleSpeakGreeting}
+              className="p-1 text-[#52745C] hover:text-[#365A46] rounded-full transition-colors cursor-pointer"
+              title="Listen aloud"
+              aria-label="Listen aloud"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <h1 className="font-serif text-3xl sm:text-4xl text-[#1F342A] font-bold tracking-tight leading-[1.15] mb-2">
+              {homeTexts.heroTitle1[language] || homeTexts.heroTitle1.en}<br />
+              {homeTexts.heroTitle2[language] || homeTexts.heroTitle2.en}
             </h1>
-            <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-              {t('elderlyHome.welcomeSubtitle')}
-            </p>
+            {/* Script / Handwritten flourish tag */}
+            <div className="absolute top-1 right-[-20px] sm:right-[-60px] text-right hidden sm:block pointer-events-none">
+              <span className="font-handwriting text-[#52745C] text-lg sm:text-xl font-semibold -rotate-6 block leading-tight">
+                {homeTexts.heroScript1[language] || homeTexts.heroScript1.en}<br />
+                {homeTexts.heroScript2[language] || homeTexts.heroScript2.en}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm text-[#68736B] leading-relaxed max-w-md my-3 font-medium">
+            {homeTexts.heroDescription[language] || homeTexts.heroDescription.en}
+          </p>
+
+          {/* Hero Call-to-Actions */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              onClick={() => onNavigate('games')}
+              className="inline-flex items-center gap-2 text-[#FFFDF7] font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-full transition-all cursor-pointer hover:opacity-95"
+              style={{
+                backgroundColor: '#52745C',
+                boxShadow: '0 4px 14px rgba(82, 116, 92, 0.25)',
+              }}
+            >
+              <span>{homeTexts.startTodayActivities[language] || homeTexts.startTodayActivities.en}</span>
+              <span>→</span>
+            </button>
+
+            <button
+              onClick={() => handleLaunchAISaathi()}
+              className="inline-flex items-center gap-2 text-[#1F342A] font-medium text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-sm backdrop-blur-sm transition-colors cursor-pointer hover:bg-[#FAF6EE]"
+              style={{
+                backgroundColor: 'rgba(251, 247, 239, 0.92)',
+                border: '1px solid rgba(70, 80, 60, 0.12)',
+              }}
+            >
+              <span
+                className="w-5 h-5 rounded-full text-[#365A46] flex items-center justify-center text-[10px]"
+                style={{ backgroundColor: '#E4EBDD' }}
+              >
+                ▶
+              </span>
+              <span>{homeTexts.talkToAISaathi[language] || homeTexts.talkToAISaathi.en}</span>
+            </button>
           </div>
         </div>
 
-        {/* Banner Right: Audio Greeting Button & Hydration Quick Tracker */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          <button
-            onClick={handleSpeakGreeting}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] text-xs font-bold border border-[#becabf]/60 transition-colors shadow-xs cursor-pointer shrink-0"
-            title="Listen to Greeting Aloud"
-          >
-            <Volume2 className="w-4 h-4 text-[#416740]" />
-            <span>{language === 'as' ? 'পঢ়ি শুনাওক' : language === 'bn' ? 'পড়ে শোনান' : language === 'hi' ? 'सुनें' : 'Listen'}</span>
-          </button>
-
-          <div
-            onClick={() => onNavigate('reminders')}
-            className="bg-[#f7faf5] hover:bg-[#ecefea] p-3 rounded-2xl border border-[#becabf]/60 shadow-xs cursor-pointer flex items-center gap-3 transition-colors shrink-0"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#bfebba]/50 text-[#032517] flex items-center justify-center">
-              <Droplet className="w-5 h-5 fill-current text-[#416740]" />
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-[#6f7a70]">
-                {t('elderlyHome.waterWidgetTitle')}
-              </div>
-              <div className="text-xs font-extrabold text-[#032517]">
-                {hydrationGlasses} / 8 {language === 'as' ? 'গিলাচ' : language === 'bn' ? 'গ্লাস' : language === 'hi' ? 'गिलास' : 'glasses'}
-              </div>
-            </div>
-          </div>
+        {/* Cultural Micro-Badge Overlay */}
+        <div
+          className="absolute bottom-4 right-5 z-10 hidden md:flex items-center gap-2 backdrop-blur-md px-3.5 py-1.5 rounded-full"
+          style={{
+            backgroundColor: 'rgba(251, 247, 239, 0.90)',
+            border: '1px solid rgba(70, 80, 60, 0.10)',
+            boxShadow: '0 2px 8px rgba(70, 60, 40, 0.05)',
+          }}
+        >
+          <span className="w-2 h-2 rounded-full bg-[#52745C] animate-pulse"></span>
+          <span className="text-[11px] font-medium text-[#1F342A] tracking-tight">
+            {homeTexts.northEastBadge[language] || homeTexts.northEastBadge.en}
+          </span>
         </div>
-      </div>
+      </section>
 
-      {/* AI Saathi Daily Summary Card ("Your Day with AI Saathi") */}
-      <DailyAISummaryCard
-        patient={patientContextEngine.getActivePatientRecord()}
-        language={language}
-        onNavigate={onNavigate}
-        onOpenAISaathi={(q) => (onOpenAISaathi ? onOpenAISaathi(q) : onOpenSarthiModal())}
-      />
-
-      {/* Sarthi AI Cognitive Care Companion Banner */}
-      <SarthiQuickBanner
-        language={language}
-        patient={patient}
-        sessions={sessions}
-        hydrationGlasses={hydrationGlasses}
-        onOpenSarthiModal={onOpenSarthiModal}
-        onNavigate={onNavigate}
-      />
-
-      {/* 4 Giant Tactile Action Cards (2x2 Grid, min 165px height) */}
-      <div>
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[#456c44] mb-3 px-1">
-          {language === 'as' ? 'প্ৰধান কাৰ্যকলাপসমূহ' : language === 'bn' ? 'প্রধান কার্যকলাপ' : language === 'hi' ? 'दैनिक गतिविधियाँ' : 'Daily Recommended Actions'}
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-          {/* Card 1: Play a Game */}
-          <button
-            onClick={() => onNavigate('games')}
-            className="group relative text-left p-6 sm:p-7 min-h-[165px] rounded-3xl bg-[#ffffff] hover:bg-[#f7faf5] border-2 border-[#becabf]/60 hover:border-[#032517] shadow-md transition-all transform active:scale-[0.98] cursor-pointer flex flex-col justify-between"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#bfebba] text-[#032517] flex items-center justify-center shadow-inner">
-                <span className="material-symbols-outlined text-[32px]">psychology</span>
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#ecefea] text-[#032517] border border-[#becabf]/50">
-                {t('elderlyHome.tileGamesBadge')}
-              </span>
-            </div>
-            <div>
-              <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] group-hover:text-[#416740] transition-colors">
-                {t('elderlyHome.tileGamesTitle')}
-              </h3>
-              <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-                {t('elderlyHome.tileGamesSubtitle')}
-              </p>
-            </div>
-          </button>
-
-          {/* Card 2: My Day & Routine */}
-          <button
-            onClick={() => onNavigate('reminders')}
-            className="group relative text-left p-6 sm:p-7 min-h-[165px] rounded-3xl bg-[#ffffff] hover:bg-[#f7faf5] border-2 border-[#becabf]/60 hover:border-[#416740] shadow-md transition-all transform active:scale-[0.98] cursor-pointer flex flex-col justify-between"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#ecefea] text-[#416740] flex items-center justify-center shadow-inner">
-                <span className="material-symbols-outlined text-[32px]">wb_twilight</span>
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#ecefea] text-[#416740] border border-[#becabf]/50">
-                {language === 'as' ? 'ৰুটিন' : language === 'bn' ? 'রুটিন' : language === 'hi' ? 'दिनचर्या' : 'Routine'}
-              </span>
-            </div>
-            <div>
-              <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] group-hover:text-[#416740] transition-colors">
-                {language === 'as' ? 'মোৰ দিনটো আৰু যত্ন' : language === 'bn' ? 'আমার দিন ও যত্ন' : language === 'hi' ? 'मेरी दिनचर्या' : 'My Day & Routine'}
-              </h3>
-              <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-                {language === 'as' ? 'ৰাতিপুৱাৰ চাহ, খোজ কঢ়া আৰু বিশ্ৰাম' : language === 'bn' ? 'সকালের চা, হাঁটা ও বিশ্রাম' : language === 'hi' ? 'सुबह की चाय, सैर और विश्राम' : 'Morning tea, walk & peaceful rest'}
-              </p>
-            </div>
-          </button>
-
-          {/* Card 3: Medicines & Health */}
-          <button
-            onClick={() => onNavigate('reminders')}
-            className="group relative text-left p-6 sm:p-7 min-h-[165px] rounded-3xl bg-[#ffffff] hover:bg-[#f7faf5] border-2 border-[#becabf]/60 hover:border-[#631d08] shadow-md transition-all transform active:scale-[0.98] cursor-pointer flex flex-col justify-between"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#ffdbd1] text-[#631d08] flex items-center justify-center shadow-inner">
-                <span className="material-symbols-outlined text-[32px]">medication</span>
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#ffdbd1]/60 text-[#631d08] border border-[#ffdbd1]">
-                {language === 'as' ? 'দৰব' : language === 'bn' ? 'ওষুধ' : language === 'hi' ? 'दवाइयाँ' : 'Meds'}
-              </span>
-            </div>
-            <div>
-              <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] group-hover:text-[#631d08] transition-colors">
-                {language === 'as' ? 'দৰব আৰু স্বাস্থ্য' : language === 'bn' ? 'ওষুধ ও স্বাস্থ্য' : language === 'hi' ? 'दवाइयाँ और स्वास्थ्य' : 'Medicines & Health'}
-              </h3>
-              <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-                {language === 'as' ? 'সময়মতে দৰব খাওক • পানীৰ অনুসৰণ' : language === 'bn' ? 'সময়মতো ওষুধ খান • জলের হিসাব' : language === 'hi' ? 'समय पर दवाइयाँ लें • जल सेवन' : 'Scheduled doses & daily water tracker'}
-              </p>
-            </div>
-          </button>
-
-          {/* Card 4: Talk to Sarthi */}
-          <button
-            onClick={onOpenSarthiModal}
-            className="group relative text-left p-6 sm:p-7 min-h-[165px] rounded-3xl bg-[#ffffff] hover:bg-[#f7faf5] border-2 border-[#becabf]/60 hover:border-[#032517] shadow-md transition-all transform active:scale-[0.98] cursor-pointer flex flex-col justify-between"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#032517] text-white flex items-center justify-center shadow-inner">
-                <span className="material-symbols-outlined text-[32px] text-[#bfebba]">smart_toy</span>
-              </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#bfebba]/40 text-[#032517] border border-[#bfebba]">
-                AI Companion
-              </span>
-            </div>
-            <div>
-              <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] group-hover:text-[#416740] transition-colors">
-                {language === 'as' ? 'সাৰথীৰ সৈতে কথা পাতক' : language === 'bn' ? 'সারথীর সাথে কথা বলুন' : language === 'hi' ? 'सारथी से बात करें' : 'Talk to Sarthi'}
-              </h3>
-              <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-                {language === 'as' ? 'মই আপোনাক সহায় আৰু উৎসাহ জনাবলৈ সাজু' : language === 'bn' ? 'আমি আপনাকে সাহায্য করতে প্রস্তুত' : language === 'hi' ? 'मार्गदर्शन और बातचीत के लिए तैयार' : 'Your gentle cognitive care guide is listening'}
-              </p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* "Something Familiar" Cultural Reminiscence Card */}
-      <div className="bg-[#ffffff] rounded-3xl border border-[#becabf]/60 shadow-md p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#1b3b2b] text-[#bfebba] flex items-center justify-center text-3xl shrink-0 shadow-inner">
-            <span className="material-symbols-outlined text-[36px]">filter_vintage</span>
-          </div>
+      {/* ─── 4 CORE COGNITIVE ACTIVITY CARDS ─────────────────────────────── */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-purpose="interactive-core-features">
+        {/* Card 1: Play & Engage (Mint: #E6EDE2) */}
+        <div
+          onClick={() => onNavigate('games')}
+          className="group rounded-[18px] p-4 transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col justify-between"
+          style={{
+            backgroundColor: '#E6EDE2',
+            border: '1px solid rgba(70, 80, 60, 0.08)',
+            boxShadow: '0 4px 18px rgba(70, 60, 40, 0.03)',
+          }}
+        >
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#416740] px-2 py-0.5 rounded-md bg-[#bfebba]/40">
-                {language === 'as' ? 'এক চিনাকি অনুভৱ' : language === 'bn' ? 'এক পরিচিত স্মৃতি' : language === 'hi' ? 'एक जानी-पहचानी याद' : 'Something Familiar'}
-              </span>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[#365A46] shadow-xs mb-3 group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: '#FBF7EF', border: '1px solid rgba(70, 80, 60, 0.08)' }}
+            >
+              <Brain className="w-5 h-5" strokeWidth={1.8} />
             </div>
-            <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#032517]">
-              {language === 'as' ? 'ব্ৰহ্মপুত্ৰ আৰু চাহ বাগিচাৰ স্মৃতি' : language === 'bn' ? 'ব্রহ্মপুত্র ও চা বাগানের স্মৃতি' : language === 'hi' ? 'ब्रह्मपुत्र और चाय बागानों की यादें' : 'Flowers & Birds of the Brahmaputra'}
+            <h3 className="font-serif font-bold text-[#1F342A] text-base mb-1">
+              {homeTexts.card1Title[language] || homeTexts.card1Title.en}
             </h3>
-            <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-              {language === 'as' ? 'শান্ত ছবি চাওক আৰু চিনাকি সুৰ উপভোগ কৰক' : language === 'bn' ? 'শান্ত ছবি দেখুন ও চেনা গান শুনুন' : language === 'hi' ? 'शांत चित्र देखें और परिचित धुनें सुनें' : 'Look at comforting regional pictures and hear peaceful folk melodies'}
+            <p className="text-xs text-[#68736B] leading-relaxed font-normal">
+              {homeTexts.card1Subtitle[language] || homeTexts.card1Subtitle.en}
             </p>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <span
+              className="w-7 h-7 rounded-full text-[#1F342A] group-hover:bg-[#52745C] group-hover:text-[#FFFDF7] flex items-center justify-center text-xs transition-all shadow-xs"
+              style={{ backgroundColor: '#FBF7EF' }}
+            >
+              →
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        {/* Card 2: My Memories (Warm Cream: #F3EADD) */}
+        <div
+          onClick={() => onNavigate('family')}
+          className="group rounded-[18px] p-4 transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col justify-between"
+          style={{
+            backgroundColor: '#F3EADD',
+            border: '1px solid rgba(70, 80, 60, 0.08)',
+            boxShadow: '0 4px 18px rgba(70, 60, 40, 0.03)',
+          }}
+        >
+          <div>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[#8C5D30] shadow-xs mb-3 group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: '#FBF7EF', border: '1px solid rgba(70, 80, 60, 0.08)' }}
+            >
+              <Image className="w-5 h-5" strokeWidth={1.8} />
+            </div>
+            <h3 className="font-serif font-bold text-[#1F342A] text-base mb-1">
+              {homeTexts.card2Title[language] || homeTexts.card2Title.en}
+            </h3>
+            <p className="text-xs text-[#68736B] leading-relaxed font-normal">
+              {homeTexts.card2Subtitle[language] || homeTexts.card2Subtitle.en}
+            </p>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <span
+              className="w-7 h-7 rounded-full text-[#1F342A] group-hover:bg-[#8C5D30] group-hover:text-[#FFFDF7] flex items-center justify-center text-xs transition-all shadow-xs"
+              style={{ backgroundColor: '#FBF7EF' }}
+            >
+              →
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: My Day (Soft Sand: #F3E8D6) */}
+        <div
+          onClick={() => onNavigate('reminders')}
+          className="group rounded-[18px] p-4 transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col justify-between"
+          style={{
+            backgroundColor: '#F3E8D6',
+            border: '1px solid rgba(70, 80, 60, 0.08)',
+            boxShadow: '0 4px 18px rgba(70, 60, 40, 0.03)',
+          }}
+        >
+          <div>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[#52745C] shadow-xs mb-3 group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: '#FBF7EF', border: '1px solid rgba(70, 80, 60, 0.08)' }}
+            >
+              <Calendar className="w-5 h-5" strokeWidth={1.8} />
+            </div>
+            <h3 className="font-serif font-bold text-[#1F342A] text-base mb-1">
+              {homeTexts.card3Title[language] || homeTexts.card3Title.en}
+            </h3>
+            <p className="text-xs text-[#68736B] leading-relaxed font-normal">
+              {homeTexts.card3Subtitle[language] || homeTexts.card3Subtitle.en}
+            </p>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <span
+              className="w-7 h-7 rounded-full text-[#1F342A] group-hover:bg-[#52745C] group-hover:text-[#FFFDF7] flex items-center justify-center text-xs transition-all shadow-xs"
+              style={{ backgroundColor: '#FBF7EF' }}
+            >
+              →
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Talk to Me (Soft Green-Beige: #EAF0E4) */}
+        <div
+          onClick={() => handleLaunchAISaathi()}
+          className="group rounded-[18px] p-4 transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col justify-between"
+          style={{
+            backgroundColor: '#EAF0E4',
+            border: '1px solid rgba(70, 80, 60, 0.08)',
+            boxShadow: '0 4px 18px rgba(70, 60, 40, 0.03)',
+          }}
+        >
+          <div>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[#4A6E59] shadow-xs mb-3 group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: '#FBF7EF', border: '1px solid rgba(70, 80, 60, 0.08)' }}
+            >
+              <Mic className="w-5 h-5" strokeWidth={1.8} />
+            </div>
+            <h3 className="font-serif font-bold text-[#1F342A] text-base mb-1">
+              {homeTexts.card4Title[language] || homeTexts.card4Title.en}
+            </h3>
+            <p className="text-xs text-[#68736B] leading-relaxed font-normal">
+              {homeTexts.card4Subtitle[language] || homeTexts.card4Subtitle.en}
+            </p>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <span
+              className="w-7 h-7 rounded-full text-[#1F342A] group-hover:bg-[#4A6E59] group-hover:text-[#FFFDF7] flex items-center justify-center text-xs transition-all shadow-xs"
+              style={{ backgroundColor: '#FBF7EF' }}
+            >
+              →
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DISCOVER THE NORTH EAST PANORAMIC CULTURAL CARD ─────────────── */}
+      <section
+        className="relative rounded-[20px] overflow-hidden shadow-cognitiva h-36 flex items-center border border-[rgba(70,80,60,0.08)]"
+        data-purpose="cultural-banner"
+      >
+        <img
+          alt="Scenic panoramic landscape of North East India with lakes, hills, and cottages"
+          className="w-full h-full object-cover"
+          src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
+        />
+        <div className="absolute inset-0 scenic-gradient"></div>
+        <div className="absolute inset-0 px-6 sm:px-8 flex items-center justify-between">
+          <div className="text-[#FFFDF7] max-w-md">
+            <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight block drop-shadow-sm">
+              {homeTexts.discoverNeTitle[language] || homeTexts.discoverNeTitle.en}
+            </span>
+            <p className="text-xs text-[#EAE4D7] mt-1 font-normal opacity-95">
+              {homeTexts.discoverNeSubtitle[language] || homeTexts.discoverNeSubtitle.en}
+            </p>
+          </div>
           <button
             onClick={() => onNavigate('game_detail', 'tea_garden')}
-            className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-[#032517] hover:bg-[#1b3b2b] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+            className="inline-flex items-center gap-2 text-[#FFFDF7] text-xs font-semibold px-4 py-2 rounded-full shadow-sm backdrop-blur-sm transition-all shrink-0 cursor-pointer"
+            style={{
+              backgroundColor: 'rgba(82, 116, 92, 0.92)',
+              border: '1px solid rgba(255, 253, 247, 0.25)',
+            }}
           >
-            <Play className="w-4 h-4 fill-current text-[#bfebba]" />
-            <span>{language === 'as' ? 'খেলক' : language === 'bn' ? 'খেলুন' : language === 'hi' ? 'खेलें' : 'Explore'}</span>
+            <span>{homeTexts.exploreRegionalContent[language] || homeTexts.exploreRegionalContent.en}</span>
+            <span>→</span>
           </button>
         </div>
+      </section>
+
+      {/* ─── AI SAATHI DYNAMIC HEALTH SUMMARY & RECOMMENDATIONS ───────────── */}
+      <div className="space-y-6">
+        <DailyAISummaryCard
+          patient={patientContextEngine.getActivePatientRecord()}
+          language={language}
+          onNavigate={onNavigate}
+          onOpenAISaathi={(q) => handleLaunchAISaathi(q)}
+        />
+
+        <RecommendedForYouToday
+          patient={patientContextEngine.getActivePatientRecord()}
+          language={language}
+          onNavigate={onNavigate}
+          onOpenAISaathiWithQuery={(q) => handleLaunchAISaathi(q)}
+        />
       </div>
 
-      {/* AI Saathi Dynamic Health Recommendations ("Recommended for You Today") */}
-      <RecommendedForYouToday
-        patient={patientContextEngine.getActivePatientRecord()}
-        language={language}
-        onNavigate={onNavigate}
-        onOpenAISaathiWithQuery={(q) => (onOpenAISaathi ? onOpenAISaathi(q) : onOpenSarthiModal())}
-      />
+      {/* ─── HEALTH TIPS FOR YOU ─────────────────────────────────────────── */}
+      <section className="pt-1" data-purpose="daily-health-tips">
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#52745C]" />
+            <h2 className="font-serif font-bold text-[#1F342A] text-base">
+              {homeTexts.healthTipsHeader[language] || homeTexts.healthTipsHeader.en}
+            </h2>
+            <span className="text-[#8A918A] text-xs font-normal hidden sm:inline">
+              {homeTexts.healthTipsSubheader[language] || homeTexts.healthTipsSubheader.en}
+            </span>
+          </div>
+          <button
+            onClick={() => handleLaunchAISaathi('Show me my personalized health tips')}
+            className="text-xs font-semibold text-[#52745C] hover:text-[#365A46] flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <span>{homeTexts.seeAll[language] || homeTexts.seeAll.en}</span>
+            <span>→</span>
+          </button>
+        </div>
 
-      {/* Family & Memories Dock Strip */}
-      <div className="bg-[#ffffff] rounded-3xl border border-[#becabf]/60 shadow-md p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5">
+        {/* 4 Small Tip Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Tip 1 */}
+          <div
+            className="rounded-xl p-2.5 transition-shadow hover:shadow-sm border border-[rgba(70,80,60,0.08)]"
+            style={{
+              backgroundColor: '#FBF7EF',
+              boxShadow: '0 4px 14px rgba(70, 60, 40, 0.03)',
+            }}
+          >
+            <div className="h-20 rounded-lg overflow-hidden mb-2 bg-[#ECE4D4]">
+              <img
+                alt="Fresh glass of water"
+                className="w-full h-full object-cover"
+                src="https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=400&q=80"
+              />
+            </div>
+            <h4 className="text-xs font-bold text-[#1F342A]">
+              {homeTexts.tip1Title[language] || homeTexts.tip1Title.en}
+            </h4>
+            <p className="text-[10.5px] text-[#68736B] leading-tight mt-0.5">
+              {homeTexts.tip1Desc[language] || homeTexts.tip1Desc.en}
+            </p>
+          </div>
+
+          {/* Tip 2 */}
+          <div
+            className="rounded-xl p-2.5 transition-shadow hover:shadow-sm border border-[rgba(70,80,60,0.08)]"
+            style={{
+              backgroundColor: '#FBF7EF',
+              boxShadow: '0 4px 14px rgba(70, 60, 40, 0.03)',
+            }}
+          >
+            <div className="h-20 rounded-lg overflow-hidden mb-2 bg-[#ECE4D4]">
+              <img
+                alt="Elder walking in the greenery garden"
+                className="w-full h-full object-cover"
+                src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80"
+              />
+            </div>
+            <h4 className="text-xs font-bold text-[#1F342A]">
+              {homeTexts.tip2Title[language] || homeTexts.tip2Title.en}
+            </h4>
+            <p className="text-[10.5px] text-[#68736B] leading-tight mt-0.5">
+              {homeTexts.tip2Desc[language] || homeTexts.tip2Desc.en}
+            </p>
+          </div>
+
+          {/* Tip 3 */}
+          <div
+            className="rounded-xl p-2.5 transition-shadow hover:shadow-sm border border-[rgba(70,80,60,0.08)]"
+            style={{
+              backgroundColor: '#FBF7EF',
+              boxShadow: '0 4px 14px rgba(70, 60, 40, 0.03)',
+            }}
+          >
+            <div className="h-20 rounded-lg overflow-hidden mb-2 bg-[#ECE4D4]">
+              <img
+                alt="Nutritious traditional bowl"
+                className="w-full h-full object-cover"
+                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80"
+              />
+            </div>
+            <h4 className="text-xs font-bold text-[#1F342A]">
+              {homeTexts.tip3Title[language] || homeTexts.tip3Title.en}
+            </h4>
+            <p className="text-[10.5px] text-[#68736B] leading-tight mt-0.5">
+              {homeTexts.tip3Desc[language] || homeTexts.tip3Desc.en}
+            </p>
+          </div>
+
+          {/* Tip 4 */}
+          <div
+            className="rounded-xl p-2.5 transition-shadow hover:shadow-sm border border-[rgba(70,80,60,0.08)]"
+            style={{
+              backgroundColor: '#FBF7EF',
+              boxShadow: '0 4px 14px rgba(70, 60, 40, 0.03)',
+            }}
+          >
+            <div className="h-20 rounded-lg overflow-hidden mb-2 bg-[#ECE4D4]">
+              <img
+                alt="Serene nature landscape"
+                className="w-full h-full object-cover"
+                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80"
+              />
+            </div>
+            <h4 className="text-xs font-bold text-[#1F342A]">
+              {homeTexts.tip4Title[language] || homeTexts.tip4Title.en}
+            </h4>
+            <p className="text-[10.5px] text-[#68736B] leading-tight mt-0.5">
+              {homeTexts.tip4Desc[language] || homeTexts.tip4Desc.en}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FAMILY MEMORY OF THE DAY CARD ───────────────────────────────── */}
+      <section
+        className="rounded-2xl border border-[rgba(70,80,60,0.08)] p-5 sm:p-6 shadow-cognitiva-sm flex flex-col sm:flex-row items-center justify-between gap-5"
+        style={{ backgroundColor: '#FBF7EF' }}
+      >
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#ffdbd1] text-[#631d08] flex items-center justify-center shrink-0">
-            <Heart className="w-7 h-7 fill-current" />
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: '#FDE8E5', color: '#BA1A1A' }}
+          >
+            <Heart className="w-6 h-6 fill-current" />
           </div>
           <div>
-            <h3 className="text-xl font-serif font-bold text-[#032517]">
+            <h3 className="font-serif font-bold text-lg text-[#1F342A]">
               {t('elderlyHome.tileFamilyTitle')}
             </h3>
-            <p className="text-xs sm:text-sm text-[#3e4941] font-medium">
+            <p className="text-xs text-[#68736B] font-medium">
               {t('elderlyHome.tileFamilySubtitle')}
             </p>
           </div>
@@ -294,37 +713,42 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
 
         <button
           onClick={() => onNavigate('family')}
-          className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] text-xs font-bold border border-[#becabf]/60 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border border-[rgba(70,80,60,0.12)] hover:bg-[#EAE4D7]"
+          style={{ backgroundColor: '#FAF6EE', color: '#1F342A' }}
         >
           <span>{t('elderlyHome.tileFamilyBadge')}</span>
-          <ArrowRight className="w-4 h-4 text-[#416740]" />
+          <ArrowRight className="w-4 h-4 text-[#52745C]" />
         </button>
-      </div>
+      </section>
 
-      {/* SOS High-Visibility Rescue Button */}
-      <div className="pt-2">
+      {/* ─── HIGH VISIBILITY SOS RESCUE BUTTON ───────────────────────────── */}
+      <section className="pt-2">
         <button
           onClick={onOpenSOS}
-          className="w-full p-6 sm:p-7 rounded-3xl bg-[#631d08] hover:bg-[#420b00] text-white shadow-xl shadow-[#631d08]/25 flex items-center justify-between border-b-4 border-[#420b00] active:border-b-0 transform active:translate-y-1 transition-all cursor-pointer select-none"
+          className="w-full p-5 sm:p-6 rounded-2xl text-white shadow-lg flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer select-none"
+          style={{
+            backgroundColor: '#BA1A1A',
+            boxShadow: '0 8px 24px rgba(186, 26, 26, 0.22)',
+          }}
         >
-          <div className="flex items-center gap-4 sm:gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center text-3xl">
-              <ShieldAlert className="w-8 h-8 fill-current text-[#ffdbd1] animate-pulse" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white">
+              <ShieldAlert className="w-7 h-7 fill-current animate-pulse text-[#FDE8E5]" />
             </div>
             <div className="text-left">
-              <h3 className="text-xl sm:text-2xl font-serif font-bold text-white">
+              <h3 className="text-lg sm:text-xl font-serif font-bold text-white leading-tight">
                 {t('elderlyHome.sosHelpTitle')}
               </h3>
-              <p className="text-xs sm:text-sm text-[#ffdbd1] font-medium">
+              <p className="text-xs text-[#FDE8E5] font-medium mt-0.5">
                 {t('elderlyHome.sosHelpSubtitle')}
               </p>
             </div>
           </div>
-          <span className="text-xl sm:text-2xl font-black bg-white/15 text-[#ffdbd1] px-5 py-2.5 rounded-2xl tracking-wider">
+          <span className="text-sm sm:text-base font-extrabold bg-white/20 text-white px-4 py-2 rounded-xl tracking-wider">
             {t('common.sos')}
           </span>
         </button>
-      </div>
+      </section>
     </div>
   );
 };

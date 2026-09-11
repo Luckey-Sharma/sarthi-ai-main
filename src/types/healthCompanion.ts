@@ -101,6 +101,7 @@ export interface AuthoritativeSource {
 export interface PipelineStageInfo {
   stage: number;
   title: string;
+  name?: string;
   detail?: string;
 }
 
@@ -109,6 +110,11 @@ export interface BaselineComparisonItem {
   patientCurrent: string;
   patientBaseline: string;
   comparisonText: string;
+  status?: string;
+  difference?: string;
+  todayValue?: string;
+  baselineAvg7Day?: string;
+  interpretation?: string;
 }
 
 export interface ConversationTurn {
@@ -169,8 +175,10 @@ export interface AISaathiResponse {
   baselineComparison?: BaselineComparisonItem[];
   missingDataNotice?: string;
   suggestedAction?: 'GAME' | 'REST' | 'ROUTINE' | 'REMINDER' | 'CAREGIVER' | 'CONVERSATION' | 'NAVIGATE' | 'HEALTH_INFO' | 'EMERGENCY' | 'NONE';
+  suggestedGame?: string;
   targetView?: string;
   targetGameId?: string;
+  message?: string;
 }
 
 export type DemoScenarioId =

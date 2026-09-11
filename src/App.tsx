@@ -11,17 +11,23 @@ import {
 import { storage } from './services/storage';
 import { LanguageProvider, t } from './i18n';
 
-// Common Components
+// Layout & Navigation Components
+import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/common/TopBar';
+import { RightDashboardPanel } from './components/layout/RightDashboardPanel';
+
+// Sarthi AI & Companion Components
 import { SarthiFloatingTrigger } from './components/sarthi/SarthiFloatingTrigger';
 import { Modal } from './components/common/Modal';
 import { LanguageWelcomeModal } from './components/common/LanguageWelcomeModal';
 import { SarthiCompanionModal } from './components/sarthi/SarthiCompanionModal';
 import { AISaathiHealthCompanion } from './components/sarthi/AISaathiHealthCompanion';
 
-// Dashboards
+// Dashboards & Caregiver Flows
 import { ElderlyHome } from './components/elderly/ElderlyHome';
 import { CaregiverDashboard } from './components/caregiver/CaregiverDashboard';
+import { CaregiverSessionSetup } from './components/caregiver/CaregiverSessionSetup';
+import { CaregiverSessionSummary } from './components/caregiver/CaregiverSessionSummary';
 
 // Games
 import { GamesHub } from './components/games/GamesHub';
@@ -49,6 +55,7 @@ export const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => storage.loadLanguage() || 'en');
   const [isSOSOpen, setIsSOSOpen] = useState<boolean>(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [isLanguageSelectOpen, setIsLanguageSelectOpen] = useState<boolean>(() => {
     return typeof window !== 'undefined' ? !localStorage.getItem('smritisetu_has_picked_language') : false;
   });
@@ -57,6 +64,21 @@ export const App: React.FC = () => {
   const [aiSaathiInitialQuery, setAiSaathiInitialQuery] = useState<string>('');
   const [sessions, setSessions] = useState<CognitiveSession[]>(() => storage.loadCognitiveHistory());
   const [waterCount, setWaterCount] = useState<number>(() => storage.loadWaterCount());
+
+  // Caregiver-led session state
+  const [activeCaregiverSession, setActiveCaregiverSession] = useState<{
+    gameId: GameId;
+    moodTag?: 'calm' | 'cheerful' | 'reflective' | 'low_energy';
+    caregiverNote?: string;
+    startTime: number;
+  } | null>(null);
+
+  const [lastCompletedSession, setLastCompletedSession] = useState<{
+    gameId: GameId;
+    durationSeconds: number;
+    initialMood?: 'calm' | 'cheerful' | 'reflective' | 'low_energy';
+    initialNote?: string;
+  } | null>(null);
 
   const handleOpenAISaathi = (query?: string) => {
     setAiSaathiInitialQuery(query || '');
@@ -80,7 +102,40 @@ export const App: React.FC = () => {
 
   const handleSelectGame = (gameId: GameId) => {
     setSelectedGame(gameId);
+    setActiveCaregiverSession({
+      gameId,
+      startTime: Date.now(),
+    });
     setView('game_detail');
+  };
+
+  const handleStartCaregiverSession = (
+    gameId: GameId,
+    moodTag?: 'calm' | 'cheerful' | 'reflective' | 'low_energy',
+    caregiverNote?: string
+  ) => {
+    setSelectedGame(gameId);
+    setActiveCaregiverSession({
+      gameId,
+      moodTag,
+      caregiverNote,
+      startTime: Date.now(),
+    });
+    setView('game_detail');
+  };
+
+  const handleFinishGameSession = () => {
+    const duration = activeCaregiverSession
+      ? Math.max(1, Math.round((Date.now() - activeCaregiverSession.startTime) / 1000))
+      : 300;
+    setLastCompletedSession({
+      gameId: selectedGame,
+      durationSeconds: duration,
+      initialMood: activeCaregiverSession?.moodTag,
+      initialNote: activeCaregiverSession?.caregiverNote,
+    });
+    setActiveCaregiverSession(null);
+    setView('session_summary');
   };
 
   const handlePatientSwitch = (newPatient: PatientProfile) => {
@@ -98,6 +153,7 @@ export const App: React.FC = () => {
             language={language}
             familyMembers={familyMembers}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       case 'tea_garden':
@@ -105,6 +161,7 @@ export const App: React.FC = () => {
           <TeaGardenFocus
             language={language}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       case 'brain_quest':
@@ -112,6 +169,7 @@ export const App: React.FC = () => {
           <BrainQuest
             language={language}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       case 'pattern_weave':
@@ -119,6 +177,7 @@ export const App: React.FC = () => {
           <PatternWeave
             language={language}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       case 'routine_builder':
@@ -126,6 +185,7 @@ export const App: React.FC = () => {
           <RoutineBuilder
             language={language}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       case 'sounds_hills':
@@ -133,6 +193,7 @@ export const App: React.FC = () => {
           <SoundsOfHills
             language={language}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       case 'family_recall':
@@ -141,6 +202,7 @@ export const App: React.FC = () => {
             language={language}
             familyMembers={familyMembers}
             onBack={() => setView('games')}
+            onFinishSession={handleFinishGameSession}
           />
         );
       default:
@@ -148,6 +210,7 @@ export const App: React.FC = () => {
           <GamesHub
             language={language}
             onSelectGame={handleSelectGame}
+            onStartCaregiverSession={() => setView('caregiver_session')}
             onBack={() => setView('home')}
           />
         );
@@ -156,11 +219,34 @@ export const App: React.FC = () => {
 
   const renderElderlyView = () => {
     switch (view) {
+      case 'caregiver_session':
+        return (
+          <CaregiverSessionSetup
+            language={language}
+            patient={patient}
+            onStartSession={handleStartCaregiverSession}
+            onBack={() => setView('home')}
+          />
+        );
+      case 'session_summary':
+        return (
+          <CaregiverSessionSummary
+            language={language}
+            patient={patient}
+            gameId={lastCompletedSession?.gameId || selectedGame}
+            durationSeconds={lastCompletedSession?.durationSeconds || 300}
+            initialMood={lastCompletedSession?.initialMood}
+            initialNote={lastCompletedSession?.initialNote}
+            onReturnHome={() => setView('home')}
+            onPlayAnother={() => setView('caregiver_session')}
+          />
+        );
       case 'games':
         return (
           <GamesHub
             language={language}
             onSelectGame={handleSelectGame}
+            onStartCaregiverSession={() => setView('caregiver_session')}
             onBack={() => setView('home')}
           />
         );
@@ -222,37 +308,143 @@ export const App: React.FC = () => {
 
   return (
     <LanguageProvider initialLanguage={language} onLanguageChange={handleLanguageChange}>
-      <div className="min-h-screen bg-stone-100/60 flex flex-col font-sans selection:bg-emerald-200">
-        {/* Top Header */}
-        <TopBar
-          mode={mode}
-          onToggleMode={(newMode) => {
-            setMode(newMode);
-            if (newMode === 'elderly') setView('home');
+      <div
+        className="min-h-screen p-2 sm:p-3 lg:p-4 text-[#1F342A] font-sans antialiased selection:bg-[#E4EBDD]"
+        style={{
+          background: 'linear-gradient(135deg, #FAF6EE 0%, #F7F1E7 45%, #F3EBDD 100%) fixed',
+        }}
+      >
+        {/* BEGIN: MainDashboardWrapper (Reference 1 Layout Container) */}
+        <div
+          className="max-w-[1580px] mx-auto rounded-[22px] flex overflow-hidden min-h-[940px] relative border border-[rgba(70,80,60,0.08)] shadow-cognitiva"
+          style={{
+            background: 'linear-gradient(135deg, #FAF6EE 0%, #F8F3E9 60%, #F4EFE6 100%)',
           }}
-          language={language}
-          onLanguageChange={handleLanguageChange}
-          activePatient={patient}
-          onOpenSOS={() => setIsSOSOpen(true)}
-          onOpenOnboarding={() => setIsOnboardingOpen(true)}
-          onOpenLanguageModal={() => setIsLanguageSelectOpen(true)}
-          onOpenSarthiModal={() => setIsSarthiOpen(true)}
-        />
+        >
+          {/* Background Decorative Botanical Watermark SVGs */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            <svg
+              className="absolute -top-12 -right-12 w-64 h-64 text-[#365A46]/[0.035] rotate-45 select-none"
+              fill="currentColor"
+              viewBox="0 0 100 100"
+            >
+              <path d="M50 5 C65 25 80 40 95 50 C75 55 60 70 50 95 C40 70 25 55 5 50 C25 40 40 25 50 5 Z"></path>
+              <path
+                d="M50 15 C58 32 72 42 85 50 C68 53 58 68 50 85 C42 68 32 53 15 50 C28 42 42 32 50 15 Z"
+                opacity="0.6"
+              ></path>
+            </svg>
+            <svg
+              className="absolute -bottom-16 -left-12 w-72 h-72 text-[#52745C]/[0.03] -rotate-12 select-none"
+              fill="currentColor"
+              viewBox="0 0 100 100"
+            >
+              <path d="M20,80 Q35,40 80,20 Q60,60 20,80 Z"></path>
+              <path d="M30,70 Q45,35 75,30" fill="none" stroke="currentColor" strokeWidth="1.5"></path>
+              <path d="M40,55 Q55,42 68,48" fill="none" stroke="currentColor" strokeWidth="1"></path>
+            </svg>
+          </div>
 
-        {/* Main Content Area */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8">
-          {mode === 'caregiver' ? (
-            <CaregiverDashboard
+          {/* Desktop Left Sidebar */}
+          <div className="hidden md:flex">
+            <Sidebar
+              currentView={view}
+              currentMode={mode}
               language={language}
-              activePatient={patient}
-              sessions={sessions}
-              onSwitchPatient={handlePatientSwitch}
+              onNavigate={(newView) => setView(newView)}
+              onToggleMode={(newMode) => {
+                setMode(newMode);
+                if (newMode === 'elderly') setView('home');
+              }}
+              onOpenAISaathi={() => handleOpenAISaathi()}
+              onOpenSOS={() => setIsSOSOpen(true)}
               onOpenOnboarding={() => setIsOnboardingOpen(true)}
             />
-          ) : (
-            renderElderlyView()
+          </div>
+
+          {/* Mobile Overlay Sidebar Drawer */}
+          {isMobileDrawerOpen && (
+            <div className="fixed inset-0 z-50 flex md:hidden bg-black/40 backdrop-blur-xs">
+              <div className="w-64 max-w-[80vw] h-full shadow-2xl bg-[#F8F3E9] z-50 flex flex-col">
+                <Sidebar
+                  currentView={view}
+                  currentMode={mode}
+                  language={language}
+                  onNavigate={(newView) => setView(newView)}
+                  onToggleMode={(newMode) => {
+                    setMode(newMode);
+                    if (newMode === 'elderly') setView('home');
+                  }}
+                  onOpenAISaathi={() => handleOpenAISaathi()}
+                  onOpenSOS={() => setIsSOSOpen(true)}
+                  onOpenOnboarding={() => setIsOnboardingOpen(true)}
+                  onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
+                />
+              </div>
+              <div
+                className="flex-1"
+                onClick={() => setIsMobileDrawerOpen(false)}
+              ></div>
+            </div>
           )}
-        </main>
+
+          {/* BEGIN: Main Content Area (TopBar + Center Content + Right Panel) */}
+          <div
+            className="flex-1 flex flex-col min-w-0"
+            style={{
+              background:
+                'radial-gradient(circle at 85% 10%, rgba(244, 239, 228, 0.7) 0%, rgba(250, 246, 238, 0.95) 55%, #FAF6EE 100%)',
+            }}
+          >
+            {/* Top Navigation Bar */}
+            <TopBar
+              mode={mode}
+              onToggleMode={(newMode) => {
+                setMode(newMode);
+                if (newMode === 'elderly') setView('home');
+              }}
+              language={language}
+              onLanguageChange={handleLanguageChange}
+              activePatient={patient}
+              onOpenSOS={() => setIsSOSOpen(true)}
+              onOpenOnboarding={() => setIsOnboardingOpen(true)}
+              onOpenLanguageModal={() => setIsLanguageSelectOpen(true)}
+              onOpenSarthiModal={() => setIsSarthiOpen(true)}
+              onSearchQuery={(q) => handleOpenAISaathi(q)}
+              onToggleMobileMenu={() => setIsMobileDrawerOpen((prev) => !prev)}
+            />
+
+            {/* BEGIN: Content Scroll Area */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col xl:flex-row gap-6">
+              {/* Center Column: Active View Feed */}
+              <main className="flex-1 space-y-6 min-w-0">
+                {mode === 'caregiver' ? (
+                  <CaregiverDashboard
+                    language={language}
+                    activePatient={patient}
+                    sessions={sessions}
+                    onSwitchPatient={handlePatientSwitch}
+                    onOpenOnboarding={() => setIsOnboardingOpen(true)}
+                  />
+                ) : (
+                  renderElderlyView()
+                )}
+              </main>
+
+              {/* Right Column: Health Telemetry & Medication Panel */}
+              <RightDashboardPanel
+                language={language}
+                activePatient={patient}
+                onNavigate={(newView) => setView(newView)}
+                onOpenAISaathi={(q) => handleOpenAISaathi(q)}
+                onOpenSOS={() => setIsSOSOpen(true)}
+              />
+            </div>
+            {/* END: Content Scroll Area */}
+          </div>
+          {/* END: Main Content Area */}
+        </div>
+        {/* END: MainDashboardWrapper */}
 
         {/* Floating Sarthi Cognitive Care Companion Button */}
         <SarthiFloatingTrigger

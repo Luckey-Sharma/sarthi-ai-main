@@ -1,412 +1,279 @@
 import React, { useState, useEffect } from 'react';
-import { Language, DDAState, DDAUpdateResult } from '../../types';
-import { updateDDA, GAME_LEVELS } from '../../services/aiEngine';
-import { storage } from '../../services/storage';
-import { playSound, speak } from '../../services/voiceService';
-import confetti from 'canvas-confetti';
-import { ArrowLeft, Sparkles, Trophy, Award, Volume2 } from 'lucide-react';
+import { Language } from '../../types';
+import { CommonGameHeader } from './CommonGameHeader';
+import { SessionEndingModal } from './SessionEndingModal';
+import { playSound } from '../../services/voiceService';
 import { t } from '../../services/i18n';
+import { Shirt, Sparkles, ArrowRight, RotateCcw, Heart } from 'lucide-react';
 
 interface PatternWeaveProps {
   language: Language;
   onBack: () => void;
+  onFinishSession?: () => void;
 }
 
-interface WeavePattern {
+interface TraditionalAttireItem {
   id: string;
-  level: number;
   name: Record<Language, string>;
-  sequence: { symbol: string; label: string }[];
-  missingIndex: number;
-  options: { id: string; symbol: string; label: string; isCorrect: boolean }[];
+  region: Record<Language, string>;
+  question: Record<Language, string>;
+  description: Record<Language, string>;
+  culturalFact: Record<Language, string>;
+  imageUrl: string;
+  options: { id: string; label: Record<Language, string>; isMatch: boolean }[];
 }
 
-const WEAVE_PATTERNS: WeavePattern[] = [
-  // Level 1: Gentle 2-element alternating (AB-AB-A)
+const TRADITIONAL_ATTIRES: TraditionalAttireItem[] = [
   {
-    id: 'p1',
-    level: 1,
+    id: 'attire-1',
     name: {
-      as: 'মৰমৰ মেখেলা চাদৰৰ বুটা',
-      bn: 'মেখলা চাদরের ঐতিহ্যবাহী বুটি',
-      mni: 'Phanek Machina',
-      hi: 'मेखेला चादोर का पारंपरिक बूटा',
-      en: 'Mekhela Chador Traditional Buta',
+      en: 'Golden Muga Silk Mekhela Chador',
+      as: 'সোণালী মুগা ৰেচমৰ মেখেলা চাদৰ',
+      bn: 'সোনালী মুগা রেশমের মেখলা চাদর',
+      hi: 'सुनहरा मूगा सिल्क मेखेला चादोर',
+      mni: 'Muga Silk Mekhela Chador',
     },
-    sequence: [
-      { symbol: '🔶', label: 'সোণালী হীৰা' },
-      { symbol: '🪷', label: 'ৰঙা পদ্ম' },
-      { symbol: '🔶', label: 'সোণালী হীৰা' },
-      { symbol: '🪷', label: 'ৰঙা পদ্ম' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 4,
+    region: {
+      en: 'Assam',
+      as: 'অসম',
+      bn: 'আসাম',
+      hi: 'असम',
+      mni: 'Assam',
+    },
+    question: {
+      en: 'Which rare golden silk, woven on handlooms and worn during Bihu dances, shines brighter with every wash?',
+      as: 'তাঁতশালত বোৱা কোনটো সোণালী ৰেচমৰ কাপোৰ বিহু নৃত্যত পিন্ধা হয় আৰু ধোৱাৰ লগে লগে উজ্জ্বলতা বাঢ়ে?',
+      bn: 'হস্তচালিত তাঁতে বোনা কোন সোনালী রেশম বস্ত্র বিহু নাচের সময় পরা হয় এবং বয়স বাড়ার সাথে সাথে যার ঔজ্জ্বল্য বাড়ে?',
+      hi: 'हथकरघे पर बुना गया कौन सा सुनहरा रेशम बिहू नृत्य में पहना जाता है और उम्र के साथ और चमकता है?',
+      mni: 'Muga silk phi ashi Bihuda shetpa fajaba reshamno?',
+    },
+    description: {
+      en: 'Muga silk is endemic only to the Brahmaputra valley. Its shimmering golden hue is completely natural and can last for more than a hundred years.',
+      as: 'মুগা ৰেচম অসমৰ গৌৰৱ। ইয়াৰ প্ৰাকৃতিক সোণালী ৰং এশ বছৰৰো অধিক কাল একেদৰে উজ্জ্বল হৈ থাকে।',
+      bn: 'মুগা রেশম আসামের গৌরব। এর প্রাকৃতিক সোনালী আভা শতবর্ষের বেশি সময় ধরে অমলিন থাকে।',
+      hi: 'मूगा सिल्क असम की अमूल्य धरोहर है। इसका प्राकृतिक सुनहरा रंग पीढ़ियों तक चमकता रहता है।',
+      mni: 'Muga silk ashi chahi chamathei mangdana fajana leiba reshamni.',
+    },
+    culturalFact: {
+      en: 'Grandmothers in Assam proudly hand down their heirloom Muga chadors to their daughters and granddaughters.',
+      as: 'আইতাহঁতে নিজৰ অতি মৰমৰ পুৰণি মুগা চাদৰখন জী-বোৱাৰীক আশীৰ্বাদ হিচাপে উপহাৰ দিয়ে।',
+      bn: 'পরিবারের মায়েরা তাদের ঐতিহ্যবাহী মুগা চাদর পরম স্নেহে কন্যা ও পুত্রবধূকে উপহার দেন।',
+      hi: 'परिवार में दादी-नानी अपनी पारंपरिक मूगा चादोर बेटियों और बहुओं को आशीर्वाद स्वरूप देती हैं।',
+      mni: 'Imunggi machaningonda katchaba muga chador.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80',
     options: [
-      { id: 'opt-1', symbol: '🔶', label: 'সোণালী হীৰা', isCorrect: true },
-      { id: 'opt-2', symbol: '🟢', label: 'সেউজীয়া বৃত্ত', isCorrect: false },
-      { id: 'opt-3', symbol: '🪷', label: 'ৰঙা পদ্ম', isCorrect: false },
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Muga Silk Mekhela Chador',
+          as: 'মুগা মেখেলা চাদৰ',
+          bn: 'মুগা মেখলা চাদর',
+          hi: 'मूगा सिल्क मेखेला चादोर',
+          mni: 'Muga Silk Chador',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Plastic Raincoat',
+          as: 'প্লাষ্টিকৰ বৰষুণৰ কোট',
+          bn: 'প্লাস্টিকের রেইনকোট',
+          hi: 'प्लास्टिक का रेनकोट',
+          mni: 'Raincoat',
+        },
+        isMatch: false,
+      },
     ],
   },
   {
-    id: 'p2',
-    level: 1,
+    id: 'attire-2',
     name: {
-      as: 'বাঁহ আৰু সোণালী ধাননি পথাৰ',
-      bn: 'বাঁশ ও সোনালী ধানের শিস',
-      mni: 'Waa amsung Fou',
-      hi: 'बांस और सुनहरी धान की बाली',
-      en: 'Bamboo Frond & Golden Paddy',
+      en: 'Traditional Naga Ceremonial Shawl',
+      as: 'পৰম্পৰাগত নগা হস্ততাঁতৰ শাল',
+      bn: 'ঐতিহ্যবাহী নাগা হস্তনির্মিত শাল',
+      hi: 'पारंपरिक नगा हथकरघा शॉल',
+      mni: 'Naga Handloom Shawl',
     },
-    sequence: [
-      { symbol: '🎋', label: 'বাঁহ' },
-      { symbol: '🌾', label: 'ধান' },
-      { symbol: '🎋', label: 'বাঁহ' },
-      { symbol: '🌾', label: 'ধান' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 4,
+    region: {
+      en: 'Nagaland',
+      as: 'নগালেণ্ড',
+      bn: 'নাগাল্যান্ড',
+      hi: 'नागालैंड',
+      mni: 'Nagaland',
+    },
+    question: {
+      en: 'Which handwoven woolen shawl, featuring bold red, black, and white patterns, honors bravery and warmth in hill winters?',
+      as: 'ৰঙা, ক’লা আৰু বগা ৰঙৰ স্পষ্ট জ্যামিতিক চানেকিৰে বোৱা পাহাৰৰ শীতৰ উমাল নগা শালখন কি?',
+      bn: 'লাল, কালো ও সাদা জ্যামিতিক নকশায় বোনা পাহাড়ের শীতের উষ্ণ ঐতিহ্যবাহী নাগা শাল কোনটি?',
+      hi: 'लाल, काले और सफेद रंगों की ज्यामितीय बुनाई वाली पहाड़ी सर्दियों की प्रसिद्ध नगा शॉल कौन सी है?',
+      mni: 'Naga chinggi ngakpi fajaba phi ashi karino?',
+    },
+    description: {
+      en: 'Every Naga tribe weaves distinct geometric motifs symbolizing courage, family dignity, and harmony with nature.',
+      as: 'প্ৰতিটো নগা জনগোষ্ঠীৰ নিজা নিপুণ চানেকি থাকে, যিয়ে সাহস আৰু প্ৰকৃতিৰ লগত একাত্মতা প্ৰকাশ কৰে।',
+      bn: 'প্রতিটি নাগা উপজাতির নিজস্ব সুন্দর বুনন রয়েছে, যা বীরত্ব ও প্রকৃতির সাথে মেলবন্ধনের প্রতীক।',
+      hi: 'प्रत्येक नगा जनजाति की अपनी अनूठी बुनाई होती है जो साहस और प्रकृति के सम्मान का प्रतीक है।',
+      mni: 'Naga shawlda fajaba pattern amsung maru oiba wari yaori.',
+    },
+    culturalFact: {
+      en: 'Woven on gentle backstrap looms by women in village homes on cool mountain afternoons.',
+      as: 'পাহাৰীয়া গাঁৱত মহিলাসকলে কঁকালৰ তাঁতশালত অতি মৰমেৰে এই শালবোৰ বয়।',
+      bn: 'পাহাড়ি গ্রামে মহিলারা পরম যত্নে নিজেদের হাতে এই সুন্দর শাল তৈরি করেন।',
+      hi: 'पहाड़ी गांवों में महिलाएं अपने हाथों से बड़े प्रेम से इन शॉलों की बुनाई करती हैं।',
+      mni: 'Chinggi nupisingna khutna saba fajaba shawl.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=600&q=80',
     options: [
-      { id: 'opt-1', symbol: '🎋', label: 'বাঁহ', isCorrect: true },
-      { id: 'opt-2', symbol: '🍂', label: 'শুকান পাত', isCorrect: false },
-      { id: 'opt-3', symbol: '🌾', label: 'ধান', isCorrect: false },
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Naga Woven Shawl',
+          as: 'নগা হস্ততাঁতৰ শাল',
+          bn: 'নাগা হস্তনির্মিত শাল',
+          hi: 'पारंपरिक नगा शॉल',
+          mni: 'Naga Shawl',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Winter Leather Jacket',
+          as: 'চামৰাৰ জেকেট',
+          bn: 'চামড়ার জ্যাকেট',
+          hi: 'लेदर जैकेट',
+          mni: 'Leather Jacket',
+        },
+        isMatch: false,
+      },
     ],
   },
   {
-    id: 'p3',
-    level: 1,
+    id: 'attire-3',
     name: {
-      as: 'অসম চাহৰ সেউজ কুঁহিপাত',
-      bn: 'আসাম চায়ের সবুজ পাতা',
-      mni: 'Cha machu',
-      hi: 'असम चाय की हरी पत्ती व प्याला',
-      en: 'Assam Morning Tea & Leaf',
+      en: 'Manipuri Phanek & Enaphi',
+      as: 'মণিপুৰী ফনেক আৰু এনাফী',
+      bn: 'মণিপুরী ফনেক ও এনাফি',
+      hi: 'मणिपुरी फनेक व एनाफी पोशाक',
+      mni: 'Manipuri Phanek & Enaphi',
     },
-    sequence: [
-      { symbol: '☕', label: 'গৰম চাহ' },
-      { symbol: '🍃', label: 'সেউজ পাত' },
-      { symbol: '☕', label: 'গৰম চাহ' },
-      { symbol: '🍃', label: 'সেউজ পাত' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 4,
-    options: [
-      { id: 'opt-1', symbol: '☕', label: 'গৰম চাহ', isCorrect: true },
-      { id: 'opt-2', symbol: '💧', label: 'পানী', isCorrect: false },
-      { id: 'opt-3', symbol: '🍯', label: 'মৌ', isCorrect: false },
-    ],
-  },
-
-  // Level 2: 3-element cyclical (ABC-ABC)
-  {
-    id: 'p4',
-    level: 2,
-    name: {
-      as: 'নগা শালৰ জ্যামিতিক চানেকি',
-      bn: 'নাগা শালের জ্যামিতিক নকশা',
-      mni: 'Naga Shawl Machu',
-      hi: 'नगा शॉल की ज्यामितीय बुनाई',
-      en: 'Naga Geometric Shawl Weave',
+    region: {
+      en: 'Manipur',
+      as: 'মণিপুৰ',
+      bn: 'মণিপুর',
+      hi: 'मणिपुर',
+      mni: 'Manipur',
     },
-    sequence: [
-      { symbol: '⬛', label: 'ক’লা খণ্ড' },
-      { symbol: '🟥', label: 'ৰঙা খণ্ড' },
-      { symbol: '⬜', label: 'বগা খণ্ড' },
-      { symbol: '⬛', label: 'ক’লা খণ্ড' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-      { symbol: '⬜', label: 'বগা খণ্ড' },
-    ],
-    missingIndex: 4,
-    options: [
-      { id: 'opt-1', symbol: '🟦', label: 'নীলা খণ্ড', isCorrect: false },
-      { id: 'opt-2', symbol: '🟥', label: 'ৰঙা খণ্ড', isCorrect: true },
-      { id: 'opt-3', symbol: '🟨', label: 'হালধীয়া খণ্ড', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p5',
-    level: 2,
-    name: {
-      as: 'মেঘালয় পাহাৰৰ সূৰ্য্য আৰু বৰষুণ',
-      bn: 'পাহাড়ের রোদ ও মেঘের খেলা',
-      mni: 'Nong amsung Numit',
-      hi: 'पहाड़ी धूप, बारिश व इंद्रधनुष',
-      en: 'Sun, Rain & Hill Rainbow',
+    question: {
+      en: 'Which graceful striped handwoven skirt cloth with intricate lotus borders is worn by women during temple prayers?',
+      as: 'পদুম ফুল আৰু চানেকিৰে বোৱা কোনটো সুন্দৰ মণিপুৰী পৰম্পৰাগত সাজ মহিলাই পিন্ধে?',
+      bn: 'পদ্মফুলের সুন্দর পাড়যুক্ত মনোরম রেখাবহুল ঐতিহ্যবাহী মণিপুরী পোশাক কোনটি?',
+      hi: 'कमल के सुंदर बॉर्डर वाली कौन सी पारंपरिक मणिपुरी पोशाक महिलाएं पूजा-त्योहारों में पहनती हैं?',
+      mni: 'Laisangda shetpa fajaba Meitei nupigi phanek ashi karino?',
     },
-    sequence: [
-      { symbol: '☀️', label: 'ৰোদ' },
-      { symbol: '🌧️', label: 'বৰষুণ' },
-      { symbol: '🌈', label: 'ৰামধেনু' },
-      { symbol: '☀️', label: 'ৰোদ' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-      { symbol: '🌈', label: 'ৰামধেনু' },
-    ],
-    missingIndex: 4,
+    description: {
+      en: 'The Phanek is woven on traditional loin looms with delicate lotus and water ripple patterns that reflect the sacred beauty of Loktak Lake.',
+      as: 'ফনেকৰ ফুলবোৰত লোকটক হ্ৰদৰ পদুম আৰু পানীৰ ঢৌৰ প্ৰভাৱ দেখা যায়, যিয়ে মণিপুৰী নাৰীৰ শ্ৰদ্ধা প্ৰকাশ কৰে।',
+      bn: 'ফনেকের নকশায় লোকটাক হ্রদের পদ্ম ও শান্ত ঢেউয়ের আবহ প্রতিফলিত হয়, যা অত্যন্ত মার্জিত ও সুন্দর।',
+      hi: 'फनेक की बुनाई में लोकटक झील के कमल और जलतरंगों की सुंदरता झलकती है।',
+      mni: 'Phanek ashi Loktak patki thambal matouk oina fajana weavetouwe.',
+    },
+    culturalFact: {
+      en: 'Worn with great grace during Ras Leela dances and celebratory family gatherings.',
+      as: 'মণিপুৰী ৰাসলীলা আৰু পৰিয়ালৰ মাঙ্গলিক অনুষ্ঠানত অতি মৰমেৰে পিন্ধা হয়।',
+      bn: 'মণিপুরী রাসলীলা ও পারিবারিক উৎসবে পরম শ্রদ্ধায় এই পোশাক পরা হয়।',
+      hi: 'मणिपुरी रासलीला और पारिवारिक उत्सवों में इसे बड़े आदर के साथ पहना जाता है।',
+      mni: 'Ras Leelada shetpa fajaba nupigi traditional phi.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=600&q=80',
     options: [
-      { id: 'opt-1', symbol: '🌧️', label: 'বৰষুণ', isCorrect: true },
-      { id: 'opt-2', symbol: '⚡', label: 'বিজুলী', isCorrect: false },
-      { id: 'opt-3', symbol: '❄️', label: 'বৰফ', isCorrect: false },
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Manipuri Phanek',
+          as: 'মণিপুৰী ফনেক',
+          bn: 'মণিপুরী ফনেক',
+          hi: 'पारंपरिक मणिपुरी फनेक',
+          mni: 'Manipuri Phanek',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Denim Jeans',
+          as: 'ডেনিম জিন্স',
+          bn: 'জিন্স প্যান্ট',
+          hi: 'डेनिम जीन्स',
+          mni: 'Denim Jeans',
+        },
+        isMatch: false,
+      },
     ],
   },
   {
-    id: 'p6',
-    level: 2,
+    id: 'attire-4',
     name: {
-      as: 'নামঘৰৰ সন্ধিয়াৰ পবিত্ৰ সুৰভিত চাকি',
-      bn: 'নামঘরের সন্ধ্যার শান্ত প্রদীপ',
-      mni: 'Laisang gi Thabimei',
-      hi: 'नामघर की संध्या आरती व पुष्प',
-      en: 'Naamghar Evening Chime & Diya',
+      en: 'Assamese White & Red Gamusa',
+      as: 'অসমীয়া মৰমৰ গামোচা',
+      bn: 'আসামের শ্রদ্ধার গামোছা',
+      hi: 'असमिया सम्मान का गमोसा',
+      mni: 'Assamgi Gamusa',
     },
-    sequence: [
-      { symbol: '🔔', label: 'ঘণ্টা' },
-      { symbol: '🪔', label: 'চাকি' },
-      { symbol: '🌸', label: 'ফুল' },
-      { symbol: '🔔', label: 'ঘণ্টা' },
-      { symbol: '🪔', label: 'চাকি' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 5,
-    options: [
-      { id: 'opt-1', symbol: '🌸', label: 'ফুল', isCorrect: true },
-      { id: 'opt-2', symbol: '🕯️', label: 'মমবাতি', isCorrect: false },
-      { id: 'opt-3', symbol: '🪘', label: 'খোল', isCorrect: false },
-    ],
-  },
-
-  // Level 3: Paired motifs (ABBA / AABB)
-  {
-    id: 'p7',
-    level: 3,
-    name: {
-      as: 'মণিপুৰী ফানেকৰ লটাক ফুল',
-      bn: 'মণিপুরী ফানেকের লতা ফুল',
-      mni: 'Phanek Mayek',
-      hi: 'मणिपुरी फानेक की रेशमी लता',
-      en: 'Manipuri Phanek Border Weave',
+    region: {
+      en: 'Assam',
+      as: 'অসম',
+      bn: 'আসাম',
+      hi: 'असम',
+      mni: 'Assam',
     },
-    sequence: [
-      { symbol: '🌸', label: 'ফুল' },
-      { symbol: '🌿', label: 'পাত' },
-      { symbol: '🌿', label: 'পাত' },
-      { symbol: '🌸', label: 'ফুল' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-      { symbol: '🌿', label: 'পাত' },
-    ],
-    missingIndex: 4,
-    options: [
-      { id: 'opt-1', symbol: '🌿', label: 'পাত', isCorrect: true },
-      { id: 'opt-2', symbol: '🌸', label: 'ফুল', isCorrect: false },
-      { id: 'opt-3', symbol: '🍂', label: 'শুকান পাত', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p8',
-    level: 3,
-    name: {
-      as: 'আহোম ৰাজদৰবাৰৰ ৰত্ন আৰু কাঁহৰ শৰাই',
-      bn: 'আহোম রাজদরবারের রত্ন ও শরাই',
-      mni: 'Ningthougi Sanathi',
-      hi: 'अहोम राजमहल के रत्न व शराई',
-      en: 'Ahom Royal Jewels & Xorai',
+    question: {
+      en: 'Which iconic white cloth with woven red floral borders is presented with bowed hands to welcome guests and honor elders?',
+      as: 'বগা কাপোৰত ৰঙা ফুলৰ চানেকিৰে বোৱা, জ্যেষ্ঠজনক ভক্তিভৰে সেৱা জনাই আগবঢ়োৱা কাপোৰখন কি?',
+      bn: 'সাদা কাপড়ে লাল ফুলের সুন্দর নকশায় বোনা, গুরুজন ও অতিথিকে শ্রদ্ধার সাথে উপহার দেওয়া বস্ত্র কোনটি?',
+      hi: 'सफेद कपड़े पर लाल फूलों की सुंदर बुनाई वाला अंगवस्त्र, जो बड़ों के आदर और अतिथियों के स्वागत में दिया जाता है?',
+      mni: 'Ahanbasingda ikai khumnabagi katchaba white & red phi kari koubage?',
     },
-    sequence: [
-      { symbol: '💎', label: 'মণি' },
-      { symbol: '💎', label: 'মণি' },
-      { symbol: '🏆', label: 'শৰাই' },
-      { symbol: '🏆', label: 'শৰাই' },
-      { symbol: '💎', label: 'মণি' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 5,
-    options: [
-      { id: 'opt-1', symbol: '💎', label: 'মণি', isCorrect: true },
-      { id: 'opt-2', symbol: '🏆', label: 'শৰাই', isCorrect: false },
-      { id: 'opt-3', symbol: '🪙', label: 'মুদ্ৰা', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p9',
-    level: 3,
-    name: {
-      as: 'ধনেশ পক্ষী আৰু পাহাৰী কপৌ ফুল',
-      bn: 'ধনেশ পাখি ও অর্কিড ফুল',
-      mni: 'Hornbill amsung Lei',
-      hi: 'हॉर्नबिल व आर्किड पुष्प का जोड़ा',
-      en: 'Great Hornbill & Kopou Orchids',
+    description: {
+      en: 'The Gamusa represents love, reverence, and North-East hospitality. Receiving a freshly handwoven Phulam Gamusa brings instant warmth to the heart.',
+      as: 'গামোচা হ’ল মৰম আৰু শ্ৰদ্ধাৰ প্ৰতীক। হস্ততাঁতৰ ফুলাম গামোচাখন হাতত ল’লে হৃদয় মৰমেৰে উপচি পৰে।',
+      bn: 'গামোছা হলো ভালোবাসা ও শ্রদ্ধার প্রতীক। নিজের ঘরের তাঁতে বোনা ফুলাম গামোছা আন্তরিকতার সেরা উপহার।',
+      hi: 'गमोसा प्रेम और सम्मान का प्रतीक है। अपने हाथों से बुना गमोसा भेंट करना असीम आत्मीयता का भाव जगाता है।',
+      mni: 'Gamusa ashi nungcba amasung ikai khumnabagi fajaba machakni.',
     },
-    sequence: [
-      { symbol: '🦜', label: 'ধনেশ' },
-      { symbol: '🦜', label: 'ধনেশ' },
-      { symbol: '🌺', label: 'কপৌ ফুল' },
-      { symbol: '🌺', label: 'কপৌ ফুল' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-      { symbol: '🦜', label: 'ধনেশ' },
-    ],
-    missingIndex: 4,
-    options: [
-      { id: 'opt-1', symbol: '🦜', label: 'ধনেশ', isCorrect: true },
-      { id: 'opt-2', symbol: '🌺', label: 'কপৌ ফুল', isCorrect: false },
-      { id: 'opt-3', symbol: '🌿', label: 'লতা', isCorrect: false },
-    ],
-  },
-
-  // Level 4: Complex rhythm & Progressive cadence
-  {
-    id: 'p10',
-    level: 4,
-    name: {
-      as: 'লোকটক হ্ৰদৰ নাও আৰু পানীৰ সোঁত',
-      bn: 'লোকটাক হ্রদের নৌকা ও তরঙ্গের ছন্দ',
-      mni: 'Loktak Hinao',
-      hi: 'लोकटक झील की नाव व जलतरंग',
-      en: 'Loktak Lake Canoe Channeling',
+    culturalFact: {
+      en: 'Awarded the Geographical Indication (GI) tag, symbolizing the heart and soul of Assamese craftsmanship.',
+      as: 'অসমীয়া সমাজৰ আয়ুসৰেখা, জিআই টেগ প্ৰাপ্ত এই গামোচাই সকলোকে একতাৰ ডোলেৰে বান্ধে।',
+      bn: 'আসামের হৃদস্পন্দন স্বরূপ এই গামোছা সকলের মাঝে শ্রদ্ধা ও স্নেহের বাঁধন রচনা করে।',
+      hi: 'असम की आत्मा माना जाने वाला गमोसा हर शुभ अवसर पर सम्मान स्वरूप भेंट किया जाता है।',
+      mni: 'Assamgi yamna maru oiba cultural phi.',
     },
-    sequence: [
-      { symbol: '🌊', label: 'ঢৌ' },
-      { symbol: '🌊', label: 'ঢৌ' },
-      { symbol: '🚣', label: 'নাও' },
-      { symbol: '🌊', label: 'ঢৌ' },
-      { symbol: '🌊', label: 'ঢৌ' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 5,
+    imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80',
     options: [
-      { id: 'opt-1', symbol: '🚣', label: 'নাও', isCorrect: true },
-      { id: 'opt-2', symbol: '🐟', label: 'মাছ', isCorrect: false },
-      { id: 'opt-3', symbol: '🌊', label: 'ঢৌ', isCorrect: false },
-      { id: 'opt-4', symbol: '🪷', label: 'পদ্ম', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p11',
-    level: 4,
-    name: {
-      as: 'তাঁতশালৰ গামোচাৰ চিৰন্তন সূতা',
-      bn: 'তাঁতের গামোছার চিরন্তন সুতো',
-      mni: 'Yongkham Khudei',
-      hi: 'हथकरघा बुनाई व लाल गमोसा',
-      en: 'Loom Shuttle & Phulam Gamosa',
-    },
-    sequence: [
-      { symbol: '🧣', label: 'গামোচা' },
-      { symbol: '🪡', label: 'বেজী-সূতা' },
-      { symbol: '🧣', label: 'গামোচা' },
-      { symbol: '🧣', label: 'গামোচা' },
-      { symbol: '🪡', label: 'বেজী-সূতা' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 5,
-    options: [
-      { id: 'opt-1', symbol: '🧣', label: 'গামোচা', isCorrect: true },
-      { id: 'opt-2', symbol: '🧵', label: 'ৰীল', isCorrect: false },
-      { id: 'opt-3', symbol: '✂️', label: 'কেঁচী', isCorrect: false },
-      { id: 'opt-4', symbol: '🪡', label: 'বেজী-সূতা', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p12',
-    level: 4,
-    name: {
-      as: 'সৰ্থেবাৰীৰ কাঁহৰ বাচন আৰু শংখ',
-      bn: 'কাঁসার শিল্প ও শুভ শাঁখ',
-      mni: 'Kanh gi Potchei',
-      hi: 'सरथेबारी के कांस्य पात्र व मंगल शंख',
-      en: 'Bell-Metal Craft & Sacred Conch',
-    },
-    sequence: [
-      { symbol: '🐚', label: 'শংখ' },
-      { symbol: '🔔', label: 'কাঁহ' },
-      { symbol: '🔔', label: 'কাঁহ' },
-      { symbol: '🐚', label: 'শংখ' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-      { symbol: '🔔', label: 'কাঁহ' },
-    ],
-    missingIndex: 4,
-    options: [
-      { id: 'opt-1', symbol: '🔔', label: 'কাঁহ', isCorrect: true },
-      { id: 'opt-2', symbol: '🐚', label: 'শংখ', isCorrect: false },
-      { id: 'opt-3', symbol: '🏆', label: 'শৰাই', isCorrect: false },
-      { id: 'opt-4', symbol: '🪔', label: 'চাকি', isCorrect: false },
-    ],
-  },
-
-  // Level 5: Master Weaver Triads & Strategic Motifs
-  {
-    id: 'p13',
-    level: 5,
-    name: {
-      as: 'লাচিত বৰফুকনৰ ঐতিহাসিক শৌৰ্য্য',
-      bn: 'লাচিত বরফুকনের ঐতিহাসিক শৌর্য',
-      mni: 'Lachit Borphukan Ningthou',
-      hi: 'लाचित बोरफुकन का सैन्य शौर्य प्रतीक',
-      en: 'Lachit Borphukan Royal Armor',
-    },
-    sequence: [
-      { symbol: '👑', label: 'মুকুট' },
-      { symbol: '🛡️', label: 'ঢাল' },
-      { symbol: '⚔️', label: 'হেংদাং' },
-      { symbol: '👑', label: 'মুকুট' },
-      { symbol: '🛡️', label: 'ঢাল' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 5,
-    options: [
-      { id: 'opt-1', symbol: '⚔️', label: 'হেংদাং', isCorrect: true },
-      { id: 'opt-2', symbol: '🏹', label: 'ধনু', isCorrect: false },
-      { id: 'opt-3', symbol: '👑', label: 'মুকুট', isCorrect: false },
-      { id: 'opt-4', symbol: '🛡️', label: 'ঢাল', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p14',
-    level: 5,
-    name: {
-      as: 'কাজিৰঙাৰ তিনি মহীয়সী বন্যপ্ৰাণ',
-      bn: 'কাজিরাঙ্গার তিন মহান বন্যপ্রাণী',
-      mni: 'Kaziranga Umunggi Saa',
-      hi: 'काजीरंगा के तीन राजसी वन्यजीव',
-      en: 'Kaziranga Great Wildlife Triad',
-    },
-    sequence: [
-      { symbol: '🦏', label: 'গঁড়' },
-      { symbol: '🐘', label: 'হাতী' },
-      { symbol: '🐅', label: 'বাঘ' },
-      { symbol: '🦏', label: 'গঁড়' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-      { symbol: '🐅', label: 'বাঘ' },
-    ],
-    missingIndex: 4,
-    options: [
-      { id: 'opt-1', symbol: '🐘', label: 'হাতী', isCorrect: true },
-      { id: 'opt-2', symbol: '🦌', label: 'হৰিণা', isCorrect: false },
-      { id: 'opt-3', symbol: '🦏', label: 'গঁড়', isCorrect: false },
-      { id: 'opt-4', symbol: '🐅', label: 'বাঘ', isCorrect: false },
-    ],
-  },
-  {
-    id: 'p15',
-    level: 5,
-    name: {
-      as: 'নীলাচলৰ নিশাৰ তৰা আৰু চন্দ্ৰকলা',
-      bn: 'নীলাচলের রাতের তারা ও জ্যোৎস্না',
-      mni: 'Thaja amsung Thawanmichak',
-      hi: 'नीलाचल पर्वत का चंद्रकला व नक्षत्र चक्र',
-      en: 'Nilachal Hills Celestial Stars',
-    },
-    sequence: [
-      { symbol: '🌙', label: 'জোন' },
-      { symbol: '✨', label: 'উজ্বল তৰা' },
-      { symbol: '🌟', label: 'মহামিলন' },
-      { symbol: '🌙', label: 'জোন' },
-      { symbol: '✨', label: 'উজ্বল তৰা' },
-      { symbol: '❓', label: 'খালী ঠাই' },
-    ],
-    missingIndex: 5,
-    options: [
-      { id: 'opt-1', symbol: '🌟', label: 'মহামিলন', isCorrect: true },
-      { id: 'opt-2', symbol: '☀️', label: 'সূৰ্য্য', isCorrect: false },
-      { id: 'opt-3', symbol: '☄️', label: 'উল্কা', isCorrect: false },
-      { id: 'opt-4', symbol: '🪐', label: 'গ্ৰহ', isCorrect: false },
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Assamese Phulam Gamusa',
+          as: 'ফুলাম গামোচা',
+          bn: 'ফুলাম গামোছা',
+          hi: 'पारंपरिक फूलां गमोसा',
+          mni: 'Phulam Gamusa',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Paper Napkin',
+          as: 'কাগজৰ ৰুমাল',
+          bn: 'কাগজের ন্যাপকিন',
+          hi: 'कागज़ का नैपकिन',
+          mni: 'Paper Napkin',
+        },
+        isMatch: false,
+      },
     ],
   },
 ];
@@ -414,267 +281,223 @@ const WEAVE_PATTERNS: WeavePattern[] = [
 export const PatternWeave: React.FC<PatternWeaveProps> = ({
   language,
   onBack,
+  onFinishSession,
 }) => {
-  const [ddaState, setDdaState] = useState<DDAState>(() => storage.loadGameDDA('pattern_weave', 1));
-  const [activePatterns, setActivePatterns] = useState<WeavePattern[]>([]);
-  const [currentIdx, setCurrentIdx] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [score, setScore] = useState<number>(0);
-  const [isFinished, setIsFinished] = useState<boolean>(false);
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [levelResult, setLevelResult] = useState<DDAUpdateResult | null>(null);
+  const [softHintId, setSoftHintId] = useState<string | null>(null);
+  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isSessionEnded, setIsSessionEnded] = useState<boolean>(false);
+  const [isTimeCapModalOpen, setIsTimeCapModalOpen] = useState<boolean>(false);
 
-  // Pick 3 random patterns tuned to current DDA level
-  const initRound = (lvl: number) => {
-    const exactMatches = WEAVE_PATTERNS.filter((p) => p.level === lvl);
-    const fallbackMatches = WEAVE_PATTERNS.filter((p) => Math.abs(p.level - lvl) <= 1);
-    const pool = exactMatches.length >= 3 ? exactMatches : fallbackMatches.length >= 3 ? fallbackMatches : WEAVE_PATTERNS;
-
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
-    const withShuffledOptions = shuffled.map((p) => ({
-      ...p,
-      options: [...p.options].sort(() => Math.random() - 0.5),
-    }));
-
-    setActivePatterns(withShuffledOptions);
-    setCurrentIdx(0);
-    setSelectedOptionId(null);
-    setScore(0);
-    setIsFinished(false);
-    setLevelResult(null);
-    setStartTime(Date.now());
-  };
-
+  // 12-15 min gentle session cap
   useEffect(() => {
-    initRound(ddaState.level);
+    const timer = setTimeout(() => {
+      setIsTimeCapModalOpen(true);
+    }, 12 * 60 * 1000);
+    return () => clearTimeout(timer);
   }, []);
 
-  const currentPattern = activePatterns[currentIdx] || activePatterns[0] || WEAVE_PATTERNS[0];
+  const currentItem = TRADITIONAL_ATTIRES[currentIndex % TRADITIONAL_ATTIRES.length] || TRADITIONAL_ATTIRES[0];
 
   const handleSelectOption = (optionId: string) => {
-    if (selectedOptionId) return;
     setSelectedOptionId(optionId);
+    const chosen = currentItem.options.find((o) => o.id === optionId);
 
-    const option = currentPattern.options.find((o) => o.id === optionId);
-    const isCorrect = !!option?.isCorrect;
-
-    if (isCorrect) {
+    if (chosen?.isMatch) {
       playSound('success');
-      setScore((s) => s + 1);
+      setIsRevealed(true);
     } else {
       playSound('click');
+      const target = currentItem.options.find((o) => o.isMatch);
+      if (target) setSoftHintId(target.id);
+      setTimeout(() => {
+        setIsRevealed(true);
+      }, 1000);
     }
-
-    setTimeout(() => {
-      if (currentIdx + 1 < activePatterns.length) {
-        setCurrentIdx((prev) => prev + 1);
-        setSelectedOptionId(null);
-      } else {
-        finishGame(score + (isCorrect ? 1 : 0));
-      }
-    }, 1500);
   };
 
-  const finishGame = (finalScore: number) => {
-    setIsFinished(true);
-    const timeTakenMs = Date.now() - startTime;
-    const totalQ = Math.max(1, activePatterns.length);
-    const avgLatency = Math.round(timeTakenMs / totalQ);
-    const accuracy = finalScore / totalQ;
-    const success = accuracy >= 0.66;
-
-    const updated = updateDDA(ddaState, { success, accuracy, reactionTimeMs: avgLatency });
-    setDdaState(updated);
-    storage.saveGameDDA('pattern_weave', updated);
-    setLevelResult(updated);
-
-    if (updated.leveledUp) {
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+  const handleNext = () => {
+    if (currentIndex + 1 >= TRADITIONAL_ATTIRES.length) {
+      setIsSessionEnded(true);
     } else {
-      confetti({ particleCount: 50, spread: 60 });
+      setCurrentIndex((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setSoftHintId(null);
+      setIsRevealed(false);
     }
-
-    storage.saveCognitiveSession({
-      id: `sess-${Date.now()}`,
-      gameId: 'pattern_weave',
-      domain: 'pattern_logic',
-      timestamp: new Date().toISOString(),
-      date: new Date().toISOString().split('T')[0],
-      score: Math.round(accuracy * 100),
-      maxScore: 100,
-      accuracy,
-      reactionTimeMs: avgLatency,
-      difficultyLevel: updated.level,
-    });
   };
+
+  const handleFinishEarly = () => {
+    if (onFinishSession) {
+      onFinishSession();
+    } else {
+      setIsSessionEnded(true);
+    }
+  };
+
+  const readAloudText = `${currentItem.question[language] || currentItem.question.en}. ${currentItem.description[language] || currentItem.description.en}`;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-xs border border-amber-200">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-sm font-bold transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{t('back', language)}</span>
-        </button>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20 font-sans">
+      {/* Unified Calm Header */}
+      <CommonGameHeader
+        language={language}
+        title={t('patternWeaveTitle', language)}
+        subtitle={language === 'as' ? 'পৰম্পৰাগত সাজপাৰ আৰু সোণালী হস্ততাঁত' : language === 'bn' ? 'ঐতিহ্যবাহী পোশাক ও তাঁত শিল্পের আনন্দ' : language === 'hi' ? 'पारंपरिक हथकरघा बुनाई व सुंदर वस्त्र' : 'Traditional Attire & Handloom Reminiscence'}
+        readAloudText={readAloudText}
+        onBack={onBack}
+        onFinishEarly={handleFinishEarly}
+      />
 
-        <div className="flex items-center gap-3 text-xs font-bold text-stone-700">
-          <div className="flex items-center gap-1.5 bg-teal-50 px-3 py-1.5 rounded-2xl border border-teal-200 shadow-2xs">
-            <span className="text-base">{GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🧵'}</span>
-            <span className="text-xs font-black text-teal-800">
-              {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}
-            </span>
+      {/* Main Single-Task Screen */}
+      {!isSessionEnded ? (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-[#becabf]/60 space-y-6">
+          {/* Question Prompt */}
+          <div className="text-center space-y-2">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] leading-relaxed">
+              {currentItem.question[language] || currentItem.question.en}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#3e4941] font-medium">
+              {language === 'as'
+                ? 'পৰম্পৰাগত হস্ততাঁতৰ চিনাকি কাপোৰখন বাছক।'
+                : language === 'bn'
+                ? 'ঐতিহ্যবাহী হস্তচালিত তাঁতের পরিচিত বস্ত্রটি বেছে নিন।'
+                : language === 'hi'
+                ? 'हथकरघे पर बुने जाने वाले परिचित वस्त्र को चुनें।'
+                : 'Choose the familiar handwoven attire below.'}
+            </p>
           </div>
-          <span className="bg-amber-100 text-amber-900 px-3 py-1.5 rounded-xl">
-            {currentIdx + 1} / {activePatterns.length || 3}
-          </span>
-          <span className="bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-xl">
-            {t('score', language)}: {score}
-          </span>
-        </div>
-      </div>
 
-      {/* Main Weaving Board */}
-      {!isFinished ? (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-200 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center text-2xl">
-                🧵
-              </div>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-stone-900">
-                  {t('patternWeaveTitle', language)}
-                </h2>
-                <p className="text-xs text-stone-500 font-medium">
-                  {currentPattern.name[language] || currentPattern.name.en}
+          {/* Large Texture/Cloth Photograph */}
+          <div className="relative mx-auto max-w-md h-64 sm:h-72 rounded-3xl overflow-hidden shadow-lg border-3 border-[#becabf]/60 bg-[#f7faf5]">
+            <img
+              src={currentItem.imageUrl}
+              alt={currentItem.name[language] || currentItem.name.en}
+              className="w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+            />
+          </div>
+
+          {/* Tactile Choices */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+            {currentItem.options.map((opt) => {
+              const isChosen = selectedOptionId === opt.id;
+              const isTarget = opt.isMatch;
+              const isHinted = softHintId === opt.id;
+
+              let btnStyle = 'bg-[#f7faf5] hover:bg-[#ecefea] text-[#032517] border-[#becabf]/70';
+
+              if (isRevealed && isTarget) {
+                btnStyle = 'bg-[#bfebba]/50 border-[#416740] text-[#032517] ring-2 ring-[#416740]/30 shadow-sm';
+              } else if (isHinted) {
+                btnStyle = 'bg-amber-50 border-amber-300 text-[#032517] shadow-sm';
+              }
+
+              return (
+                <button
+                  key={opt.id}
+                  disabled={isRevealed}
+                  onClick={() => handleSelectOption(opt.id)}
+                  className={`p-5 rounded-2xl border-2 text-base sm:text-lg font-serif font-bold text-center transition-all cursor-pointer min-h-[72px] flex items-center justify-center gap-2 ${btnStyle}`}
+                >
+                  <span>{opt.label[language] || opt.label.en}</span>
+                  {isRevealed && isTarget && (
+                    <span className="text-[#416740] font-black text-sm">✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Revealed Cultural Fact & Story */}
+          {isRevealed && (
+            <div className="pt-3 space-y-4 animate-in fade-in duration-500">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#bfebba]/25 border border-[#416740]/30 text-xs sm:text-sm text-[#032517] leading-relaxed space-y-2">
+                <div className="font-bold text-[#032517]">
+                  🧶 {currentItem.name[language] || currentItem.name.en}
+                </div>
+                <p className="text-[#3e4941]">
+                  {currentItem.description[language] || currentItem.description.en}
                 </p>
+                <div className="pt-2 border-t border-[#416740]/20 text-xs italic text-[#032517] flex items-start gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-[#416740] shrink-0 mt-0.5" />
+                  <span>{currentItem.culturalFact[language] || currentItem.culturalFact.en}</span>
+                </div>
               </div>
-            </div>
-            <button
-              onClick={() => speak(`${t('patternWeaveTitle', language)}. ${t('whichMotif', language)}`, language)}
-              className="p-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 transition-colors cursor-pointer border border-teal-200"
-              title={t('voice.readAloud', language)}
-              aria-label={t('voice.readAloud', language)}
-            >
-              <Volume2 className="w-5 h-5" />
-            </button>
-          </div>
 
-          {/* Loom Shuttle Sequence Banner */}
-          <div className="bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 p-6 rounded-3xl border-2 border-dashed border-amber-300">
-            <div className="text-xs font-bold text-amber-800 uppercase tracking-widest text-center mb-4">
-              {t('warpWeft', language)}
-            </div>
-            <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-              {currentPattern.sequence.map((item, idx) => {
-                const isMissing = idx === currentPattern.missingIndex;
-                return (
-                  <div
-                    key={idx}
-                    className={`w-14 h-16 sm:w-18 sm:h-22 rounded-2xl flex flex-col items-center justify-center text-3xl sm:text-4xl shadow-md border-2 transition-all ${
-                      isMissing
-                        ? 'bg-amber-200 border-amber-500 ring-4 ring-amber-400/40 animate-pulse text-amber-800 font-black'
-                        : 'bg-white border-stone-200'
-                    }`}
-                  >
-                    {isMissing && selectedOptionId ? (
-                      <span>
-                        {currentPattern.options.find((o) => o.id === selectedOptionId)?.symbol}
-                      </span>
-                    ) : (
-                      <span>{item.symbol}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-stone-500 text-center mt-4 font-medium">
-              {t('whichMotif', language)}
-            </p>
-          </div>
-
-          {/* Options to Choose */}
-          <div className="space-y-2">
-            <p className="text-xs font-black text-stone-600 uppercase tracking-wider">
-              {t('whichMotif', language)}
-            </p>
-            <div className={`grid gap-3 ${currentPattern.options.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
-              {currentPattern.options.map((option) => {
-                const isChosen = selectedOptionId === option.id;
-                let btnClass = 'bg-stone-50 hover:bg-amber-50 border-stone-200 text-stone-800';
-
-                if (selectedOptionId) {
-                  if (option.isCorrect) {
-                    btnClass = 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-400';
-                  } else if (isChosen) {
-                    btnClass = 'bg-rose-50 border-rose-500 text-rose-900 ring-2 ring-rose-400';
-                  }
-                }
-
-                return (
-                  <button
-                    key={option.id}
-                    disabled={selectedOptionId !== null}
-                    onClick={() => handleSelectOption(option.id)}
-                    className={`p-4 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 ${btnClass}`}
-                  >
-                    <span className="text-4xl">{option.symbol}</span>
-                    <span className="text-xs font-bold">{option.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Completion Screen */
-        <div className="bg-white rounded-3xl p-8 shadow-xl border border-stone-200 text-center space-y-5 animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-full bg-teal-100 text-teal-800 mx-auto flex items-center justify-center text-3xl">
-            <Trophy className="w-8 h-8 text-teal-600" />
-          </div>
-          <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
-            {t('patternWeaveWonTitle', language)}
-          </h3>
-          <p className="text-stone-600 text-sm">
-            {t('score', language)}: <strong className="text-teal-700 font-black">{score}</strong> / {activePatterns.length}
-          </p>
-
-          {/* Level Adaptive Feedback */}
-          {levelResult && (
-            <div className={`mt-4 mx-auto max-w-md p-3.5 rounded-2xl flex items-center justify-center gap-2.5 font-black text-sm shadow-md ${
-              levelResult.leveledUp
-                ? 'bg-amber-400 text-stone-950 animate-bounce'
-                : 'bg-teal-50 text-teal-950 border border-teal-200'
-            }`}>
-              <span className="text-xl">
-                {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🧵'}
-              </span>
-              <span>
-                {levelResult.feedbackMessage?.[language] ||
-                  `${GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}`}
-              </span>
+              <div className="text-center pt-2">
+                <button
+                  onClick={handleNext}
+                  className="px-8 py-4 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-base shadow-md transition-transform active:scale-[0.98] cursor-pointer inline-flex items-center gap-2"
+                >
+                  <span>{t('exploreAnotherAttire', language)}</span>
+                  <span>➔</span>
+                </button>
+              </div>
             </div>
           )}
+        </div>
+      ) : (
+        /* Neutral, Positive Finish Screen (NO SCORES) */
+        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-md border-2 border-[#becabf]/60 text-center space-y-5 animate-in fade-in duration-500 font-sans">
+          <div className="w-16 h-16 rounded-full bg-[#bfebba]/50 text-[#032517] mx-auto flex items-center justify-center text-3xl shadow-xs">
+            🧶
+          </div>
 
-          <div className="flex justify-center gap-3 pt-4">
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#032517]">
+              {t('sessionCompleteMessage', language)}
+            </h2>
+            <p className="text-sm text-[#3e4941] font-medium max-w-md mx-auto leading-relaxed">
+              {language === 'as'
+                ? 'আজিৰ সকলো পৰম্পৰাগত সাজপাৰৰ স্মৃতি সুন্দৰভাৱে উপভোগ কৰা হ’ল।'
+                : language === 'bn'
+                ? 'আজকের সকল ঐতিহ্যবাহী পোশাকের স্মৃতি আমরা একসাথে উপভোগ করলাম।'
+                : language === 'hi'
+                ? 'आज के सभी पारंपरिक वस्त्रों की यादें हमने साथ मिलकर देखीं।'
+                : 'All traditional handlooms and cherished textile memories were explored together.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
             <button
-              onClick={() => initRound(ddaState.level)}
-              className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-2xl text-sm shadow-md cursor-pointer transition-transform active:scale-95"
+              onClick={() => {
+                if (onFinishSession) {
+                  onFinishSession();
+                } else {
+                  onBack();
+                }
+              }}
+              className="py-3.5 px-6 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-sm shadow-md transition-transform active:scale-[0.98] cursor-pointer"
             >
-              {t('playAgain', language)}
+              {language === 'as' ? 'সত্ৰৰ সাৰাংশ চাওক' : language === 'bn' ? 'সেশনের সারাংশ দেখুন' : language === 'hi' ? 'सत्र सारांश देखें' : 'View Session Summary'}
             </button>
             <button
-              onClick={onBack}
-              className="px-6 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-extrabold rounded-2xl text-sm cursor-pointer"
+              onClick={() => {
+                setCurrentIndex(0);
+                setSelectedOptionId(null);
+                setSoftHintId(null);
+                setIsRevealed(false);
+                setIsSessionEnded(false);
+              }}
+              className="py-3.5 px-6 bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] font-extrabold rounded-2xl text-sm border border-[#becabf]/60 cursor-pointer"
             >
-              {t('home', language)}
+              {t('exploreAnotherAttire', language)}
             </button>
           </div>
         </div>
       )}
+
+      {/* 10-15 Min Gentle Session Ending Cap */}
+      <SessionEndingModal
+        isOpen={isTimeCapModalOpen}
+        language={language}
+        onFinish={() => {
+          setIsTimeCapModalOpen(false);
+          handleFinishEarly();
+        }}
+        onContinue={() => setIsTimeCapModalOpen(false)}
+      />
     </div>
   );
 };

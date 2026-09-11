@@ -51,7 +51,7 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
     }
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Sarthi Gemini API timeout (25s)')), 25000)
+      setTimeout(() => reject(new Error('Sarthi Gemini API timeout (20s)')), 20000)
     );
 
     const geminiResult = await Promise.race([

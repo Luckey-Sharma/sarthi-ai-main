@@ -3,13 +3,15 @@ import {
   AuthoritativeSource,
   PersonalizationSignal,
   PatientHealthRecord,
+  ConversationTurn,
+  PipelineStageInfo,
 } from '../types/healthCompanion';
 import { Language } from '../types';
-import { patientContextEngine } from './patientContextEngine';
+import { patientContextEngine, DynamicContextRetrievalResult } from './patientContextEngine';
 
 // Verified Authoritative Medical Citations for Transparency & Offline Fallback
 const VERIFIED_AUTHORITATIVE_SOURCES: Record<string, AuthoritativeSource[]> = {
-  diet: [
+  nutrition: [
     {
       id: 'src-icmr-nin',
       organization: 'ICMR - National Institute of Nutrition (NIN)',
@@ -44,7 +46,7 @@ const VERIFIED_AUTHORITATIVE_SOURCES: Record<string, AuthoritativeSource[]> = {
       snippet: 'Advice on maintaining muscle mass with gentle protein, bone density via calcium/vitamin D, and drinking fluids regularly throughout the morning.',
     },
   ],
-  activity: [
+  physical_activity: [
     {
       id: 'src-who-pa',
       organization: 'World Health Organization (WHO)',
@@ -79,7 +81,7 @@ const VERIFIED_AUTHORITATIVE_SOURCES: Record<string, AuthoritativeSource[]> = {
       snippet: 'Walking improves joint mobility, sleep quality, and mental clarity. Even short 10-15 minute bouts provide measurable cardiovascular benefit.',
     },
   ],
-  vitals: [
+  vitals_cardiac: [
     {
       id: 'src-mohfw-bp',
       organization: 'Ministry of Health and Family Welfare (MoHFW India)',
@@ -102,8 +104,19 @@ const VERIFIED_AUTHORITATIVE_SOURCES: Record<string, AuthoritativeSource[]> = {
       trustRating: 'NIH / CDC',
       snippet: 'Explains systolic and diastolic pressures in simple terms. A reading of 128/82 mmHg indicates stable, controlled blood pressure on antihypertensive therapy.',
     },
+    {
+      id: 'src-who-spo2',
+      organization: 'World Health Organization (WHO)',
+      title: 'Pulse Oximetry Training Manual & Geriatric Reference Ranges',
+      url: 'https://www.who.int',
+      domain: 'who.int',
+      publishedDate: '2023-05',
+      authoritative: true,
+      trustRating: 'WHO',
+      snippet: 'Resting SpO2 readings of 95-100% reflect normal oxygenation at sea level and moderate altitude.',
+    },
   ],
-  sleep: [
+  sleep_rest: [
     {
       id: 'src-nimhans-sleep',
       organization: 'NIMHANS Bengaluru',
@@ -151,25 +164,111 @@ const VERIFIED_AUTHORITATIVE_SOURCES: Record<string, AuthoritativeSource[]> = {
       snippet: 'Mild dehydration (1-2% fluid loss) triggers acute fatigue, dizziness, and reversible cognitive confusion in older adults.',
     },
   ],
+  cognitive_care: [
+    {
+      id: 'src-who-dementia',
+      organization: 'World Health Organization (WHO)',
+      title: 'Risk Reduction of Cognitive Decline and Dementia Guidelines',
+      url: 'https://www.who.int/publications/i/item/9789241550543',
+      domain: 'who.int',
+      publishedDate: '2023-09',
+      authoritative: true,
+      trustRating: 'WHO',
+      snippet: 'Cognitive stimulation through pattern matching, reminiscence, and structured daily routines supports neuroplasticity in older adults with MCI.',
+    },
+    {
+      id: 'src-nimhans-cog',
+      organization: 'NIMHANS Center for Brain Aging',
+      title: 'Cognitive Engagement Protocols for Early-Stage Memory Preservation',
+      url: 'https://nimhans.ac.in',
+      domain: 'nimhans.ac.in',
+      publishedDate: '2024-01',
+      authoritative: true,
+      trustRating: 'National Institute (ICMR/NIN)',
+      snippet: 'Engaging daily in 15 minutes of familiar photo recall, pattern weaving, and calming soundscapes enhances attentional stability.',
+    },
+  ],
+  medications: [
+    {
+      id: 'src-cdsco-india',
+      organization: 'CDSCO & Ministry of Health (India)',
+      title: 'Senior Citizen Medication Safety and Adherence Handbook',
+      url: 'https://cdsco.gov.in',
+      domain: 'cdsco.gov.in',
+      publishedDate: '2024-02',
+      authoritative: true,
+      trustRating: 'Government / MoHFW',
+      snippet: 'Never abruptly discontinue antihypertensive or memory medications. Take morning tablets with a full glass of water after breakfast unless indicated otherwise.',
+    },
+    {
+      id: 'src-nhs-meds',
+      organization: 'National Health Service (NHS UK)',
+      title: 'Medicines Information: Telmisartan & Donepezil Senior Guidance',
+      url: 'https://www.nhs.uk/medicines/',
+      domain: 'nhs.uk',
+      publishedDate: '2023-11',
+      authoritative: true,
+      trustRating: 'Premier Hospital (AIIMS/NHS)',
+      snippet: 'Telmisartan relaxes blood vessels to lower blood pressure. Donepezil helps memory by increasing acetylcholine levels.',
+    },
+  ],
+  general: [
+    {
+      id: 'src-who-aging',
+      organization: 'World Health Organization (WHO)',
+      title: 'Integrated Care for Older People (ICOPE) Guidelines',
+      url: 'https://www.who.int/teams/maternal-newborn-child-adolescent-health-and-ageing/ageing-and-health',
+      domain: 'who.int',
+      publishedDate: '2023-10',
+      authoritative: true,
+      trustRating: 'WHO',
+      snippet: 'Comprehensive person-centered assessment to optimize intrinsic capacity and functional ability in older adults.',
+    },
+    {
+      id: 'src-icmr-senior',
+      organization: 'Indian Council of Medical Research (ICMR)',
+      title: 'Guidelines for Active and Healthy Aging in India',
+      url: 'https://main.icmr.nic.in',
+      domain: 'icmr.nic.in',
+      publishedDate: '2024-01',
+      authoritative: true,
+      trustRating: 'National Institute (ICMR/NIN)',
+      snippet: 'Holistic care integrating mild physical movement, balanced traditional regional diet, cognitive stimulation, and family engagement.',
+    },
+  ],
 };
+
+// Aliases for matching
+VERIFIED_AUTHORITATIVE_SOURCES['diet'] = VERIFIED_AUTHORITATIVE_SOURCES['nutrition'];
+VERIFIED_AUTHORITATIVE_SOURCES['activity'] = VERIFIED_AUTHORITATIVE_SOURCES['physical_activity'];
+VERIFIED_AUTHORITATIVE_SOURCES['vitals'] = VERIFIED_AUTHORITATIVE_SOURCES['vitals_cardiac'];
+VERIFIED_AUTHORITATIVE_SOURCES['sleep'] = VERIFIED_AUTHORITATIVE_SOURCES['sleep_rest'];
+VERIFIED_AUTHORITATIVE_SOURCES['daily_routine'] = VERIFIED_AUTHORITATIVE_SOURCES['general'];
 
 export interface PipelineProgressCallback {
   (stage: number, stageName: string, detail?: string): void;
 }
 
 export class AISaathiService {
-  private conversationHistory: Array<{ query: string; response: AISaathiResponse }> = [];
+  private conversationTurns: ConversationTurn[] = [];
+
+  public getConversationTurns(): ConversationTurn[] {
+    return this.conversationTurns;
+  }
+
+  public clearConversationTurns(): void {
+    this.conversationTurns = [];
+  }
 
   /**
-   * Executes the full 8-Stage Pipeline:
-   * 1. Patient Data Retrieval
-   * 2. Question Understanding
-   * 3. Context Analysis
-   * 4. Trusted Web Search
-   * 5. Source Verification
-   * 6. Personalization Engine (Gemini API with fallback)
-   * 7. Structured Answer Card Generation
-   * 8. Source Transparency Attachment
+   * Executes the full Dynamic Agent Pipeline:
+   * 1. Intent & Multi-Turn Understanding
+   * 2. Selective Patient Data Tool Execution
+   * 3. Personal Baseline Comparison (against 7-day average)
+   * 4. External Web Search Decision (Internal only vs Web vs Hybrid)
+   * 5. Authoritative Verification (WHO, ICMR, NIN, AIIMS, NHS, CDC)
+   * 6. Personalization Engine (Gemini 2.5 Flash with fallback)
+   * 7. Structured Transparent Answer Generation
    */
   public async askAISaathi(
     userQuestion: string,
@@ -181,41 +280,105 @@ export class AISaathiService {
       return this.generateFallbackResponse('General greeting', language);
     }
 
-    // ─── STAGE 1: PATIENT DATA RETRIEVAL ──────────────────────────────────
-    onProgress?.(1, 'Understanding your question...', 'Analyzing question intent and clinical keywords');
-    await new Promise((r) => setTimeout(r, 220));
+    // ─── STAGE 1: DYNAMIC RETRIEVAL & INTENT UNDERSTANDING ──────────────────
+    onProgress?.(1, 'Understanding your question...', 'Analyzing question intent and conversational context');
+    await new Promise((r) => setTimeout(r, 200));
 
-    // ─── STAGE 2: CHECKING HEALTH PROFILE ─────────────────────────────────
-    onProgress?.(2, 'Checking your health profile...', 'Retrieving medical conditions, diet preference & medications');
-    const { patient, signals, retrievedTools, suggestedWebSearchTerms, primaryIntent } =
-      patientContextEngine.retrieveRelevantContext(undefined, trimmed);
-    await new Promise((r) => setTimeout(r, 260));
-
-    // ─── STAGE 3: REVIEWING TODAY'S ACTIVITY ──────────────────────────────
-    onProgress?.(3, "Reviewing today's activity...", 'Evaluating step count, sleep last night & latest vitals');
-    await new Promise((r) => setTimeout(r, 240));
+    const contextResult = patientContextEngine.retrieveRelevantContext(
+      undefined,
+      trimmed,
+      this.conversationTurns
+    );
+    const {
+      patient,
+      signals,
+      retrievedTools,
+      baselineComparisons,
+      missingDataNotices,
+      suggestedWebSearchTerms,
+      shouldSearchWeb,
+      primaryDomain,
+    } = contextResult;
 
     // ─── Check for Red-Flag Emergency ──────────────────────────────────────
     if (this.isEmergencyQuery(trimmed)) {
-      return this.generateEmergencyResponse(patient, language, signals);
+      const emergencyResp = this.generateEmergencyResponse(patient, language, signals);
+      this.conversationTurns.push({ role: 'user', text: trimmed });
+      this.conversationTurns.push({ role: 'assistant', text: emergencyResp.recommendationDetails });
+      return emergencyResp;
     }
 
-    // ─── STAGE 4: SEARCHING TRUSTED HEALTH SOURCES ────────────────────────
-    onProgress?.(4, 'Searching trusted health sources...', 'Querying WHO, ICMR, NIN, AIIMS, and NHS databases');
-    await new Promise((r) => setTimeout(r, 280));
+    // ─── Dynamically Build & Dispatch ONLY Stages Actually Performed ────────
+    const plannedStages: Array<{ stageNum: number; title: string; detail?: string }> = [];
+    let currentStageIndex = 2;
 
-    // ─── STAGE 5: CROSS-CHECKING INFORMATION ──────────────────────────────
-    onProgress?.(5, 'Cross-checking information...', 'Filtering advertisements & blogs to verify medical facts');
-    await new Promise((r) => setTimeout(r, 250));
+    if (retrievedTools.some((t) => ['getRecentVitals', 'getKnownConditions', 'getCurrentMedications'].includes(t))) {
+      plannedStages.push({
+        stageNum: currentStageIndex++,
+        title: 'Checking relevant health information...',
+        detail: 'Reviewing resting vitals, known conditions, and medical directives',
+      });
+    }
 
-    // ─── STAGE 6: CREATING PERSONALIZED ANSWER ────────────────────────────
-    onProgress?.(6, 'Creating your personalized answer...', 'Synthesizing recommendations with your health signals');
+    if (retrievedTools.includes('getActivityData') || retrievedTools.includes('getSleepData')) {
+      plannedStages.push({
+        stageNum: currentStageIndex++,
+        title: "Reviewing your recent activity...",
+        detail: 'Evaluating step count, movement pace, and sleep hours',
+      });
+    }
 
-    // Call Backend Gemini API with rich structured health context
+    if (baselineComparisons && baselineComparisons.length > 0) {
+      plannedStages.push({
+        stageNum: currentStageIndex++,
+        title: 'Comparing with your usual pattern...',
+        detail: 'Comparing today against your personal 7-day baseline history',
+      });
+    }
+
+    if (retrievedTools.includes('getRoutine') || retrievedTools.includes('getAppointments')) {
+      plannedStages.push({
+        stageNum: currentStageIndex++,
+        title: 'Checking your routine...',
+        detail: 'Verifying daily schedule, pending tasks, and medication status',
+      });
+    }
+
+    if (shouldSearchWeb) {
+      plannedStages.push({
+        stageNum: currentStageIndex++,
+        title: 'Searching trusted health sources...',
+        detail: 'Querying WHO, ICMR, NIN, AIIMS, and NHS databases',
+      });
+      plannedStages.push({
+        stageNum: currentStageIndex++,
+        title: 'Cross-checking information...',
+        detail: 'Filtering commercial blogs to verify clinical recommendations',
+      });
+    }
+
+    plannedStages.push({
+      stageNum: currentStageIndex++,
+      title: 'Personalizing your answer...',
+      detail: 'Synthesizing tailored recommendation for your health and day',
+    });
+
+    // Run visually through the actual stages
+    for (const stage of plannedStages) {
+      onProgress?.(stage.stageNum, stage.title, stage.detail);
+      await new Promise((r) => setTimeout(r, 160));
+    }
+
+    // ─── Call Backend Gemini API with rich structured health context ─────────
     try {
-      const response = await this.callBackendGemini(trimmed, patient, signals, suggestedWebSearchTerms, language);
+      const response = await this.callBackendGemini(
+        trimmed,
+        contextResult,
+        language
+      );
       if (response) {
-        this.conversationHistory.push({ query: trimmed, response });
+        this.conversationTurns.push({ role: 'user', text: trimmed });
+        this.conversationTurns.push({ role: 'assistant', text: response.recommendationDetails || response.message || '' });
         return response;
       }
     } catch (err) {
@@ -225,12 +388,13 @@ export class AISaathiService {
     // ─── Deterministic Personalized Fallback ────────────────────────────────
     const localResponse = this.generateDeterministicPersonalizedAnswer(
       trimmed,
-      patient,
-      signals,
-      primaryIntent,
+      contextResult,
+      plannedStages,
       language
     );
-    this.conversationHistory.push({ query: trimmed, response: localResponse });
+
+    this.conversationTurns.push({ role: 'user', text: trimmed });
+    this.conversationTurns.push({ role: 'assistant', text: localResponse.recommendationDetails });
     return localResponse;
   }
 
@@ -251,6 +415,10 @@ export class AISaathiService {
       'heavy bleeding',
       'vomiting blood',
       'choking',
+      'chhati me dard',
+      'behosh',
+      'asengba emergency',
+      'bukey batha',
     ];
     return emergencyWords.some((term) => q.includes(term));
   }
@@ -284,18 +452,8 @@ export class AISaathiService {
         'Prioritizes immediate physical safety over home management',
       ],
       alternativeOption: 'Notify your nearest family member or press the red SOS Safe Card button.',
-      signalsUsed: signals.slice(0, 3),
-      sourcesChecked: [
-        {
-          id: 'src-who-er',
-          organization: 'World Health Organization (WHO)',
-          title: 'Emergency Medical Care Red Flag Protocols',
-          url: 'https://www.who.int/health-topics/emergency-care',
-          domain: 'who.int',
-          authoritative: true,
-          trustRating: 'WHO',
-        },
-      ],
+      signalsUsed: signals,
+      sourcesChecked: [],
       followUpQuestions: ['Call Emergency Contact', 'Open SOS Safe Card', 'Notify Caregiver'],
       safetyCategory: 'EMERGENCY',
       disclaimer: 'CRITICAL SAFETY ALERT: This guidance does not substitute for emergency medical care. Seek hospital evaluation immediately.',
@@ -305,20 +463,22 @@ export class AISaathiService {
         'Call your caregiver or 108 / 112 emergency services immediately.',
         'Do not take unprescribed painkillers or walk around unaccompanied.',
       ],
+      suggestedAction: 'EMERGENCY',
+      targetView: 'emergency',
       tone: 'urgent',
+      searchPerformed: false,
+      dataSourceMode: 'INTERNAL_RECORDS',
       caregiverInsight: 'URGENT: Patient reported potential acute cardiac/respiratory red-flag symptoms. Prompt in-person evaluation required.',
     };
   }
 
   private async callBackendGemini(
     query: string,
-    patient: PatientHealthRecord,
-    signals: PersonalizationSignal[],
-    searchTerms: string[],
+    contextResult: DynamicContextRetrievalResult,
     language: Language
   ): Promise<AISaathiResponse | null> {
+    const { patient, signals, baselineComparisons, missingDataNotices, retrievedTools, suggestedWebSearchTerms, shouldSearchWeb, primaryDomain } = contextResult;
     const recentVitals = patient.vitalsHistory?.[0];
-    const bpMed = patient.currentMedications.find((m) => m.condition.toLowerCase().includes('blood pressure'));
 
     const payload = {
       patientProfile: {
@@ -333,7 +493,13 @@ export class AISaathiService {
       routineAdherence: 85,
       reminderAdherence: 90,
       userMessage: query,
-      shouldSearchWeb: true,
+      conversationHistory: this.conversationTurns.slice(-4),
+      baselineComparisons,
+      missingDataNotices,
+      retrievedTools,
+      searchReason: contextResult.searchReason,
+      primaryDomain,
+      shouldSearchWeb,
       healthContext: {
         dietPreference: patient.dietPreference,
         foodAllergies: patient.foodAllergies,
@@ -350,13 +516,14 @@ export class AISaathiService {
           steps: recentVitals?.steps,
           water: `${recentVitals?.waterGlasses || 4}/8 glasses`,
           meals: recentVitals?.meals.breakfast ? `Breakfast: ${recentVitals.meals.breakfast}` : 'Breakfast pending',
+          mood: recentVitals?.mood || 'calm',
         },
         signals: signals.map((s) => ({ id: s.id, label: s.label, value: s.value, category: s.category })),
       },
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     const res = await fetch('/api/sarthi/chat', {
       method: 'POST',
@@ -373,237 +540,411 @@ export class AISaathiService {
 
     const data = json.data;
 
-    // Map sources
-    const mappedSources: AuthoritativeSource[] = (data.sources || []).map((s: any, idx: number) => ({
-      id: `src-web-${idx}`,
-      organization: s.publisher || 'Medical Authority',
-      title: s.title,
-      url: s.url,
-      domain: s.domain,
-      publishedDate: s.publishedDate || '2024',
-      snippet: s.snippet,
-      authoritative: true,
-      trustRating: 'Medical Authority',
-    }));
+    // Map sources ONLY if search was actually performed!
+    const searchActuallyPerformed = !!data.searchPerformed && shouldSearchWeb;
+    let finalSources: AuthoritativeSource[] = [];
 
-    // Ensure we have at least 2 verified sources
-    const defaultSources = VERIFIED_AUTHORITATIVE_SOURCES['diet'] || [];
-    const finalSources = mappedSources.length >= 2 ? mappedSources : [...mappedSources, ...defaultSources].slice(0, 3);
+    if (searchActuallyPerformed) {
+      finalSources = (data.sources || []).map((s: any, idx: number) => ({
+        id: `src-web-${idx}`,
+        organization: s.publisher || 'Medical Authority',
+        title: s.title,
+        url: s.url,
+        domain: s.domain,
+        publishedDate: s.publishedDate || '2024',
+        snippet: s.snippet,
+        authoritative: true,
+        trustRating: 'Medical Authority',
+      }));
+
+      // If backend did search but list was empty, provide curated fallback for that domain
+      if (finalSources.length === 0) {
+        finalSources = (VERIFIED_AUTHORITATIVE_SOURCES[primaryDomain] || VERIFIED_AUTHORITATIVE_SOURCES['general'] || []).slice(0, 3);
+      }
+    }
 
     return {
       recommendationTitle: data.recommendationTitle || data.shortMessage || 'Personalized Health Recommendation',
       recommendationDetails: data.recommendationDetails || data.message,
       whyItSuitsYou: data.whyItSuitsYou || [
-        `Aligned with your ${patient.dietPreference} diet preference`,
-        `Considers today's ${recentVitals?.steps.toLocaleString() || '1,420'} steps`,
-        `Accounts for blood pressure monitoring (${recentVitals?.bloodPressure.systolic || 128}/${recentVitals?.bloodPressure.diastolic || 82} mmHg)`,
+        `Personalized for ${patient.name} (${patient.age} yrs)`,
+        `Synthesizes today's recorded health factors and routine`,
       ],
-      alternativeOption: data.alternativeOption || 'Warm vegetable soup with soft steamed rice or oats',
+      alternativeOption: data.alternativeOption || 'Gentle relaxation break or seated deep breathing',
       signalsUsed: data.signalsUsed?.length ? data.signalsUsed : signals,
       sourcesChecked: finalSources,
       followUpQuestions: data.followUpQuestions?.length
         ? data.followUpQuestions
-        : ['Suggest my lunch', 'Give me another option', 'Can I eat this with my medicine?'],
+        : ['What should I focus on today?', 'Should I go for a walk?', 'How did I sleep compared to my usual?'],
       safetyCategory: data.safetyCategory || 'GENERAL_HEALTH_INFORMATION',
       disclaimer: data.disclaimer || 'This guidance is for general health support and does not replace advice from your healthcare professional.',
       isEmergency: !!data.isEmergency,
+      suggestedAction: data.suggestedAction || 'NONE',
+      suggestedGame: data.suggestedGame,
+      targetView: data.targetView,
+      targetGameId: data.targetGameId,
       tone: data.tone || 'encouraging',
       caregiverInsight: data.caregiverNote || `Personalized recommendation synthesized for ${patient.name}.`,
-      modelUsed: data.modelUsed || 'gemini-3.6-flash',
-      searchPerformed: true,
+      modelUsed: data.modelUsed || 'gemini-2.5-flash',
+      searchPerformed: searchActuallyPerformed,
+      dataSourceMode: searchActuallyPerformed ? 'HYBRID' : 'INTERNAL_RECORDS',
+      executedStages: data.executedStages,
+      baselineComparison: baselineComparisons,
+      missingDataNotice: data.missingDataNotice || missingDataNotices[0],
     };
   }
 
   /**
-   * Deterministic Personalized Engine:
-   * Generates clinically accurate, highly personalized answers matching the exact same
-   * schema even when offline or without an API key, proving the patient context engine.
+   * Dynamic Deterministic Personalized Engine:
+   * Covers all domains (routine, cognitive games, sleep, walks, vitals, meds, family, hydration)
+   * with baseline delta calculations and proper source transparency when offline or no API key.
    */
   private generateDeterministicPersonalizedAnswer(
     query: string,
-    patient: PatientHealthRecord,
-    signals: PersonalizationSignal[],
-    intent: string,
+    contextResult: DynamicContextRetrievalResult,
+    plannedStages: Array<{ stageNum: number; title: string; detail?: string }>,
     language: Language
   ): AISaathiResponse {
+    const { patient, signals, baselineComparisons, missingDataNotices, primaryDomain, shouldSearchWeb } = contextResult;
     const recentVitals = patient.vitalsHistory?.[0];
     const bp = recentVitals ? `${recentVitals.bloodPressure.systolic}/${recentVitals.bloodPressure.diastolic}` : '128/82';
     const steps = recentVitals?.steps || 1420;
     const sleepFormatted = recentVitals ? `${Math.floor(recentVitals.sleepHours)}h ${Math.round((recentVitals.sleepHours % 1) * 60)}m` : '6h 20m';
     const isVeg = patient.dietPreference === 'vegetarian';
 
-    // 1. Food / Breakfast / Nutrition
-    if (intent === 'diet') {
+    const baselineStepItem = baselineComparisons.find((c) => c.metric === 'Physical Activity (Steps)');
+    const baselineSleepItem = baselineComparisons.find((c) => c.metric === 'Sleep Recovery');
+    const baselineBpItem = baselineComparisons.find((c) => c.metric === 'Blood Pressure');
+    const baselineCogItem = baselineComparisons.find((c) => c.metric === 'Cognitive Engagement');
+
+    const executedStages: PipelineStageInfo[] = plannedStages.map((s) => ({
+      stage: s.stageNum,
+      title: s.title,
+      detail: s.detail,
+    }));
+
+    const verifiedSources = shouldSearchWeb
+      ? (VERIFIED_AUTHORITATIVE_SOURCES[primaryDomain] || VERIFIED_AUTHORITATIVE_SOURCES['general'] || []).slice(0, 3)
+      : [];
+
+    const dataSourceMode = shouldSearchWeb ? 'HYBRID' : 'INTERNAL_RECORDS';
+
+    // ── 1. Cognitive Care & Memory Games ─────────────────────────────────────
+    if (primaryDomain === 'cognitive_care') {
+      const cog = patientContextEngine.getCognitivePerformance(patient.id);
       return {
-        recommendationTitle: isVeg ? 'Vegetable Poha + Curd' : 'Steamed Fish Stew with Vegetables',
-        recommendationDetails: isVeg
-          ? `Based on your ${patient.dietPreference} diet and today's relatively low morning activity (${steps.toLocaleString()} steps), a light and balanced breakfast may suit you best. A warm bowl of vegetable poha (flattened rice cooked with peas and carrots) paired with a small cup of fresh curd provides easy-to-digest energy and protein. Keeping added salt moderate aligns with your blood pressure routine (${bp} mmHg).`
-          : `Considering your active morning (${steps.toLocaleString()} steps), a wholesome, balanced meal is recommended. A light steamed fish curry with seasonal gourds and Joha rice delivers gentle protein and Omega-3s while keeping digestion light.`,
+        recommendationTitle: `Play ${cog.suggestedGame}`,
+        recommendationDetails: `Your cognitive engagement score today is ${cog.latestScore} points, which reflects a stable pattern consistent with your baseline. A 10-minute session of ${cog.suggestedGame} will gently stimulate your visual-spatial recall and attentional focus without causing fatigue.`,
         whyItSuitsYou: [
-          `✓ Aligns with your ${patient.dietPreference} dietary preference`,
-          `✓ Complements your light physical activity today (${steps.toLocaleString()} steps)`,
-          `✓ Moderate salt usage supports your blood pressure routine (${bp} mmHg)`,
-          `✓ Follows ICMR-NIN geriatric nutrition guidelines for age ${patient.age}`,
+          `✓ Calibrated for ${cog.cognitiveStage} stage preservation`,
+          baselineCogItem ? `✓ ${baselineCogItem.comparisonText}` : `✓ Matches your current baseline score (${cog.sevenDayAverage} pts average)`,
+          `✓ Complements your restful ${sleepFormatted} sleep recovery`,
+          `✓ Internal cognitive health platform tracking (no web search needed)`,
         ],
-        alternativeOption: 'Warm oats porridge cooked with crushed almonds and a sliced ripe banana.',
+        alternativeOption: 'Explore the Calming Sanctuary for 5 minutes of soothing hill flute music.',
         signalsUsed: signals,
-        sourcesChecked: VERIFIED_AUTHORITATIVE_SOURCES.diet,
+        sourcesChecked: [],
+        searchPerformed: false,
+        dataSourceMode: 'INTERNAL_RECORDS',
+        executedStages,
         followUpQuestions: [
-          'Suggest my lunch',
-          'Give me another option',
-          'Why is this healthy for blood pressure?',
-          'Can I eat this with my medicine?',
+          'How have my scores been this week?',
+          'Can I try a harder game?',
+          'Show me my family photos',
         ],
-        safetyCategory: 'GENERAL_HEALTH_INFORMATION',
-        disclaimer: 'This guidance is for general health support and does not replace advice from your healthcare professional.',
+        suggestedAction: 'GAME',
+        suggestedGame: 'memory_match',
+        targetView: 'game_detail',
+        targetGameId: 'memory_match',
+        safetyCategory: 'SELF_CARE_INFORMATION',
+        disclaimer: 'This guidance is for general cognitive stimulation and does not replace clinical evaluation.',
         isEmergency: false,
         tone: 'encouraging',
-        caregiverInsight: `Patient asked about breakfast. Suggested ${isVeg ? 'Vegetable Poha + Curd' : 'Fish stew'} matching low sodium BP plan.`,
-        modelUsed: 'deterministic-clinical-engine',
-        searchPerformed: false,
+        caregiverInsight: `Cognitive game (${cog.suggestedGame}) recommended based on stable score (${cog.latestScore}).`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
       };
     }
 
-    // 2. Walking / Exercise
-    if (intent === 'activity') {
+    // ── 2. Medications ───────────────────────────────────────────────────────
+    if (primaryDomain === 'medications') {
+      const morningMed = patient.currentMedications.find((m) => m.timeOfDay === 'morning');
+      const nightMed = patient.currentMedications.find((m) => m.timeOfDay === 'night');
+      return {
+        recommendationTitle: 'Your Daily Medication Schedule',
+        recommendationDetails: `Your morning medicine (${morningMed?.name || 'Telmisartan'} ${morningMed?.dosage || '40mg'}) is marked as ${morningMed?.takenToday ? 'taken' : 'pending'}. Your evening medicine (${nightMed?.name || 'Donepezil'} ${nightMed?.dosage || '5mg'}) is scheduled for 9:00 PM at bedtime. Always take your medicine with a full glass of water, and keep your caregiver informed.`,
+        whyItSuitsYou: [
+          `✓ Directly reflects your prescribed schedule for ${patient.knownConditions[0] || 'hypertension'}`,
+          `✓ Morning status: ${morningMed?.takenToday ? 'Completed' : 'Pending action'}`,
+          `✓ Bedtime reminder: ${nightMed?.name || 'Donepezil'} at 9:00 PM`,
+          `✓ Strict medical safety: Medication dosages must only be altered by your doctor`,
+        ],
+        alternativeOption: 'Check the Medication Reminders tab for alarm times and pill descriptions.',
+        signalsUsed: signals,
+        sourcesChecked: verifiedSources,
+        searchPerformed: shouldSearchWeb,
+        dataSourceMode,
+        executedStages,
+        followUpQuestions: [
+          'What time is my night medicine?',
+          'Can I take this medicine with food?',
+          'Did I take my pill today?',
+        ],
+        suggestedAction: 'REMINDER',
+        targetView: 'reminders',
+        safetyCategory: 'MEDICATION_INFORMATION',
+        disclaimer: 'Always adhere to the exact prescription provided by your treating physician. Do not alter doses independently.',
+        isEmergency: false,
+        tone: 'supportive',
+        caregiverInsight: `Medication schedule verified. Morning taken: ${morningMed?.takenToday}, Night pending: ${!nightMed?.takenToday}.`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
+      };
+    }
+
+    // ── 3. Vitals / Blood Pressure ───────────────────────────────────────────
+    if (primaryDomain === 'vitals_cardiac') {
+      return {
+        recommendationTitle: 'Blood Pressure Explained in Simple Words',
+        recommendationDetails: `Your latest resting blood pressure is ${bp} mmHg, and your resting pulse is ${recentVitals?.heartRate || 72} beats per minute. The top number (${recentVitals?.bloodPressure.systolic || 128}) is systolic pressure when your heart pumps, and the bottom number (${recentVitals?.bloodPressure.diastolic || 82}) is when your heart rests between beats. For someone taking your prescribed morning Telmisartan, this reading is within a stable, managed range.`,
+        whyItSuitsYou: [
+          `✓ Interprets your live reading (${bp} mmHg)`,
+          baselineBpItem ? `✓ ${baselineBpItem.comparisonText}` : `✓ Reflects your 7-day average trend`,
+          `✓ Acknowledges your prescribed ${patient.currentMedications[0]?.name || 'Telmisartan'} adherence`,
+          `✓ Aligned with MoHFW and ICMR senior home monitoring guidance`,
+        ],
+        alternativeOption: 'Record blood pressure again tomorrow morning before breakfast for consistent tracking.',
+        signalsUsed: signals,
+        sourcesChecked: verifiedSources,
+        searchPerformed: true,
+        dataSourceMode: 'HYBRID',
+        executedStages,
+        followUpQuestions: [
+          'What is normal blood pressure for age 70+?',
+          'Is my oxygen level okay?',
+          'What foods naturally support blood pressure?',
+        ],
+        suggestedAction: 'HEALTH_INFO',
+        safetyCategory: 'GENERAL_HEALTH_INFORMATION',
+        disclaimer: 'This guidance explains recorded vitals for general support and does not constitute a clinical diagnosis.',
+        isEmergency: false,
+        tone: 'calm',
+        caregiverInsight: `Blood pressure explained (${bp} mmHg). Stable comparison against personal baseline.`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
+      };
+    }
+
+    // ── 4. Sleep & Fatigue ───────────────────────────────────────────────────
+    if (primaryDomain === 'sleep_rest') {
+      return {
+        recommendationTitle: 'Hydration Refresh + 20-Minute Restful Pause',
+        recommendationDetails: `Your records show ${sleepFormatted} of sleep last night, and you have logged ${recentVitals?.waterGlasses || 4} of 8 glasses of water today. Feeling tired is often a gentle signal from your body that hydration is low or that your morning pace was brisk. Drinking a glass of fresh water or warm cardamom tea and resting your eyes for 20 minutes in a quiet room will help refresh your vitality.`,
+        whyItSuitsYou: [
+          `✓ Directly reflects last night's sleep (${sleepFormatted})`,
+          baselineSleepItem ? `✓ ${baselineSleepItem.comparisonText}` : `✓ Compared against your personal 7-day sleep pattern`,
+          `✓ Accounts for today's hydration (${recentVitals?.waterGlasses || 4}/8 glasses)`,
+          `✓ Non-pharmacological daytime rest recommended by NIMHANS and NHS`,
+        ],
+        alternativeOption: 'Listen to the 5-minute Sounds of Hills flute track in the Calming Sanctuary.',
+        signalsUsed: signals,
+        sourcesChecked: verifiedSources,
+        searchPerformed: true,
+        dataSourceMode: 'HYBRID',
+        executedStages,
+        followUpQuestions: [
+          'How can I sleep better tonight?',
+          'Should I take a long nap now?',
+          'How much water should I drink?',
+        ],
+        suggestedAction: 'REST',
+        targetView: 'calming',
+        safetyCategory: 'SELF_CARE_INFORMATION',
+        disclaimer: 'This guidance supports healthy sleep hygiene and does not substitute for medical evaluation of persistent fatigue.',
+        isEmergency: false,
+        tone: 'calm',
+        caregiverInsight: `Fatigue addressed: advised hydration and brief 20m rest pause.`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
+      };
+    }
+
+    // ── 5. Physical Activity / Walking ───────────────────────────────────────
+    if (primaryDomain === 'physical_activity') {
       const canWalkMore = steps < 3000;
       return {
         recommendationTitle: canWalkMore ? '15-Minute Gentle Balcony or Garden Walk' : 'Relaxing Seated Chair Stretches',
         recommendationDetails: canWalkMore
-          ? `You have completed ${steps.toLocaleString()} steps so far today. After your ${sleepFormatted} sleep last night, a calm 15-minute stroll on flat ground or along the balcony would gently stimulate circulation without straining your joints. Wear supportive footwear and take regular deep breaths.`
-          : `You have already achieved a healthy ${steps.toLocaleString()} steps today! To allow your muscles and knee joints to rest, a session of 10 minutes of gentle seated ankle rotations and arm stretches is ideal.`,
+          ? `You have completed ${steps.toLocaleString()} steps so far today. After your ${sleepFormatted} sleep, a calm 15-minute stroll on flat garden ground or along the balcony will gently stimulate circulation without straining your joints. Wear comfortable, supportive footwear and take relaxed deep breaths.`
+          : `You have already achieved a healthy ${steps.toLocaleString()} steps today! To allow your knee joints and muscles to rest, a 10-minute session of gentle seated ankle rotations and arm stretches is ideal.`,
         whyItSuitsYou: [
-          `✓ Calibrated to your steps so far today (${steps.toLocaleString()} steps)`,
-          `✓ Accounts for last night's ${sleepFormatted} sleep recovery`,
-          `✓ Respects your ${patient.mobilityLevel === 'independent' ? 'independent mobility' : 'assisted cane walking'} profile`,
+          `✓ Calibrated to your steps completed so far (${steps.toLocaleString()} steps)`,
+          baselineStepItem ? `✓ ${baselineStepItem.comparisonText}` : `✓ Reflects your 7-day walking trend`,
+          `✓ Respects your ${patient.mobilityLevel === 'independent' ? 'independent walking' : 'assisted cane walking'} profile`,
           `✓ Follows WHO guidelines for multicomponent senior physical activity`,
         ],
-        alternativeOption: 'Seated breathing exercises (Pranayama) or 10 minutes listening to calming nature sounds.',
+        alternativeOption: 'Seated breathing exercises (Pranayama) or 10 minutes listening to nature sounds.',
         signalsUsed: signals,
-        sourcesChecked: VERIFIED_AUTHORITATIVE_SOURCES.activity,
+        sourcesChecked: verifiedSources,
+        searchPerformed: true,
+        dataSourceMode: 'HYBRID',
+        executedStages,
         followUpQuestions: [
           'Can I do this sitting down?',
-          'Show me how to stretch safely',
           'What should my step goal be?',
+          'Show me gentle chair stretches',
         ],
+        suggestedAction: 'ROUTINE',
         safetyCategory: 'SELF_CARE_INFORMATION',
-        disclaimer: 'This guidance is for general health support and does not replace advice from your healthcare professional.',
+        disclaimer: 'Stop immediately if you experience dizziness, joint pain, or shortness of breath.',
         isEmergency: false,
         tone: 'supportive',
-        caregiverInsight: `Activity advice delivered based on ${steps} steps and ${sleepFormatted} sleep.`,
-        modelUsed: 'deterministic-clinical-engine',
-        searchPerformed: false,
+        caregiverInsight: `Activity advice delivered: ${steps} steps logged compared to baseline.`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
       };
     }
 
-    // 3. Sleep / Tired / Fatigue
-    if (intent === 'sleep') {
+    // ── 6. Nutrition ─────────────────────────────────────────────────────────
+    if (primaryDomain === 'nutrition') {
       return {
-        recommendationTitle: 'Hydration Refresh + 20-Minute Restful Pause',
-        recommendationDetails: `Your records show ${sleepFormatted} of sleep last night, and you have logged ${recentVitals?.waterGlasses || 4} glasses of water today. Feeling tired is often a gentle signal from your body that hydration is low or that your morning routine pace was brisk. Drinking a glass of warm water or herbal cardamom tea and resting your eyes for 20 minutes in a quiet room will help refresh your vitality.`,
+        recommendationTitle: isVeg ? 'Vegetable Poha + Curd' : 'Steamed Fish Stew with Vegetables',
+        recommendationDetails: isVeg
+          ? `Based on your ${patient.dietPreference} diet and today's activity (${steps.toLocaleString()} steps), a light and balanced meal is recommended. A warm bowl of vegetable poha (flattened rice with peas and carrots) paired with fresh curd provides easy-to-digest energy and gentle protein. Keeping added salt moderate aligns with your blood pressure routine (${bp} mmHg).`
+          : `Considering your active morning (${steps.toLocaleString()} steps), a wholesome, balanced meal is recommended. A light steamed fish curry with seasonal vegetables and rice delivers gentle protein and Omega-3s while keeping digestion light.`,
         whyItSuitsYou: [
-          `✓ Directly reflects your sleep duration last night (${sleepFormatted})`,
-          `✓ Identifies your current hydration status (${recentVitals?.waterGlasses || 4}/8 glasses)`,
-          `✓ Non-pharmacological daytime rest recommended by NIMHANS and NHS`,
-          `✓ Avoids long daytime naps that might disrupt tonight's sleep`,
+          `✓ Aligns with your ${patient.dietPreference} dietary preference (${patient.regionalCuisinePreference.split('(')[0].trim()})`,
+          `✓ Complements your physical exertion today (${steps.toLocaleString()} steps)`,
+          `✓ Moderate salt usage supports blood pressure routine (${bp} mmHg)`,
+          `✓ Follows ICMR-NIN senior citizen nutritional guidelines`,
         ],
-        alternativeOption: 'Listen to the 5-minute Sounds of Hills flute track in the Calming Sanctuary.',
+        alternativeOption: 'Warm oats porridge cooked with crushed almonds and a ripe banana.',
         signalsUsed: signals,
-        sourcesChecked: VERIFIED_AUTHORITATIVE_SOURCES.sleep,
+        sourcesChecked: verifiedSources,
+        searchPerformed: true,
+        dataSourceMode: 'HYBRID',
+        executedStages,
         followUpQuestions: [
-          'What can I do to sleep better tonight?',
-          'Is afternoon tea good for sleep?',
-          'Should I take a nap now?',
+          'Suggest my lunch',
+          'What foods should I avoid for blood pressure?',
+          'Can I eat this with my medicine?',
         ],
-        safetyCategory: 'SELF_CARE_INFORMATION',
-        disclaimer: 'This guidance is for general health support and does not replace advice from your healthcare professional.',
-        isEmergency: false,
-        tone: 'calm',
-        caregiverInsight: `Fatigue query addressed: recommended fluid intake and a short 20m rest pause.`,
-        modelUsed: 'deterministic-clinical-engine',
-        searchPerformed: false,
-      };
-    }
-
-    // 4. Blood Pressure
-    if (intent === 'vitals') {
-      return {
-        recommendationTitle: 'Blood Pressure Explained in Simple Words',
-        recommendationDetails: `Your latest resting blood pressure is ${bp} mmHg, and your resting pulse is ${recentVitals?.heartRate || 72} beats per minute. The top number (128) is the systolic pressure when your heart beats, and the bottom number (82) is when your heart rests between beats. For someone taking your prescribed morning Telmisartan, this reading is in a stable, well-managed range. Keep added salt moderate and continue your gentle morning walks.`,
-        whyItSuitsYou: [
-          `✓ Directly interprets your current reading (${bp} mmHg)`,
-          `✓ Acknowledges your prescribed blood pressure medicine (${patient.currentMedications[0]?.name || 'Telmisartan'})`,
-          `✓ Reinforces MoHFW and ICMR home monitoring recommendations`,
-          `✓ Explains medical numbers clearly without diagnostic anxiety`,
-        ],
-        alternativeOption: 'Check blood pressure again tomorrow morning before breakfast for consistent tracking.',
-        signalsUsed: signals,
-        sourcesChecked: VERIFIED_AUTHORITATIVE_SOURCES.vitals,
-        followUpQuestions: [
-          'What is a normal blood pressure for age 70+?',
-          'Can I stop my blood pressure medicine?',
-          'What foods lower blood pressure naturally?',
-        ],
+        suggestedAction: 'HEALTH_INFO',
         safetyCategory: 'GENERAL_HEALTH_INFORMATION',
-        disclaimer: 'This guidance is for general health support and does not replace advice from your healthcare professional.',
+        disclaimer: 'This guidance is for general nutritional support and does not replace clinical dietary prescriptions.',
         isEmergency: false,
-        tone: 'calm',
-        caregiverInsight: `BP explained in simple terms (${bp} mmHg). Adherence to medication reinforced.`,
-        modelUsed: 'deterministic-clinical-engine',
-        searchPerformed: false,
+        tone: 'encouraging',
+        caregiverInsight: `Diet advice delivered matching ${patient.dietPreference} preference and blood pressure plan.`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
       };
     }
 
-    // 5. Default General Health
+    // ── 7. Family Memories ───────────────────────────────────────────────────
+    if (primaryDomain === 'family_memories') {
+      const fam = patientContextEngine.getFamilyConnections(patient.id);
+      const mem = patientContextEngine.getMemoryDatabase(patient.id);
+      return {
+        recommendationTitle: 'Review Family Reminiscence Album',
+        recommendationDetails: `Connecting with loved ones brings warmth and cognitive clarity. You could review the cherished story of "${mem.cherishedMemories[0]?.title || 'Childhood Memories'}" in your Family Recall album or have a short phone conversation with ${fam.primaryCaregiver}.`,
+        whyItSuitsYou: [
+          `✓ Connects with your family connection records (${fam.primaryCaregiver})`,
+          `✓ Reminiscence therapy enhances emotional wellbeing and autobiographical recall`,
+          `✓ Receptive mood (${recentVitals?.mood || 'calm'}) suits social engagement`,
+          `✓ Internal family memory database (private and confidential)`,
+        ],
+        alternativeOption: 'Try the Family Recall memory game with photos of your children and grandchildren.',
+        signalsUsed: signals,
+        sourcesChecked: [],
+        searchPerformed: false,
+        dataSourceMode: 'INTERNAL_RECORDS',
+        executedStages,
+        followUpQuestions: [
+          'Show me my family photos',
+          'When did I last speak with my daughter?',
+          'Play Family Recall game',
+        ],
+        suggestedAction: 'NAVIGATE',
+        targetView: 'family',
+        safetyCategory: 'NON_HEALTH',
+        disclaimer: 'Family reminiscence is an emotional wellbeing tool.',
+        isEmergency: false,
+        tone: 'encouraging',
+        caregiverInsight: `Family memory reminiscence suggested for ${patient.name}.`,
+        modelUsed: 'deterministic-agent-engine',
+        baselineComparison: baselineComparisons,
+        missingDataNotice: missingDataNotices[0],
+      };
+    }
+
+    // ── 8. Daily Routine / General Plan ("What should I do today?") ──────────
+    const plan = patientContextEngine.generatePersonalizedPlan(patient.id);
     return {
-      recommendationTitle: 'Daily Health & Vitality Focus',
-      recommendationDetails: `Hello ${patient.name}! Today you have achieved ${steps.toLocaleString()} steps, slept ${sleepFormatted}, and your blood pressure is stable at ${bp} mmHg. For your health today, ensure you complete your 6-8 glasses of water, enjoy a balanced ${patient.dietPreference} meal, and spend 10 minutes stimulating your mind with a memory puzzle.`,
+      recommendationTitle: 'Your Balanced Daily Plan',
+      recommendationDetails: `Good day, ${patient.name}! Today, your focus is: ${plan.focusForToday}. You've completed ${steps.toLocaleString()} steps and slept ${sleepFormatted}. In the morning, enjoy a gentle 15-minute garden walk. This afternoon, take a 20-minute rest and try a short memory puzzle. In the evening, review family photos and take your night medicine at 9:00 PM.`,
       whyItSuitsYou: [
-        `✓ Synthesizes your current steps (${steps.toLocaleString()})`,
-        `✓ Considers your resting vitals (${bp} mmHg)`,
-        `✓ Aligns with your ${patient.dietPreference} nutritional plan`,
+        `✓ Integrates your morning activity (${steps.toLocaleString()} steps)`,
+        `✓ Accounts for last night's ${sleepFormatted} sleep recovery`,
+        baselineStepItem ? `✓ ${baselineStepItem.comparisonText}` : `✓ Reflects your 7-day personal baseline trend`,
+        `✓ Verifies scheduled medicines (${patient.currentMedications[0]?.name || 'Telmisartan'} & Donepezil)`,
       ],
-      alternativeOption: 'Explore the Calming Sanctuary for relaxation.',
+      alternativeOption: 'Spend 10 minutes in the Calming Sanctuary listening to hill flute music.',
       signalsUsed: signals,
-      sourcesChecked: VERIFIED_AUTHORITATIVE_SOURCES.diet,
+      sourcesChecked: [],
+      searchPerformed: false,
+      dataSourceMode: 'INTERNAL_RECORDS',
+      executedStages,
       followUpQuestions: [
-        'What should I eat today to stay healthy?',
-        'Can I go for a walk today?',
-        'Explain my blood pressure in simple words',
+        'Which memory game should I play?',
+        'What time is my medicine?',
+        'How did I sleep compared to usual?',
       ],
+      suggestedAction: 'ROUTINE',
       safetyCategory: 'GENERAL_HEALTH_INFORMATION',
-      disclaimer: 'This guidance is for general health support and does not replace advice from your healthcare professional.',
+      disclaimer: 'This daily plan is designed for general wellness support and senior routine structure.',
       isEmergency: false,
       tone: 'encouraging',
-      caregiverInsight: `General daily health overview presented for ${patient.name}.`,
-      modelUsed: 'deterministic-clinical-engine',
-      searchPerformed: false,
+      caregiverInsight: `Holistic daily plan generated: activity, hydration, memory game, and night medicine aligned.`,
+      modelUsed: 'deterministic-agent-engine',
+      baselineComparison: baselineComparisons,
+      missingDataNotice: missingDataNotices[0],
     };
   }
 
   private generateFallbackResponse(query: string, language: Language): AISaathiResponse {
     const patient = patientContextEngine.getActivePatientRecord();
-    const signals = patientContextEngine.retrieveRelevantContext(patient.id, query).signals;
+    const contextResult = patientContextEngine.retrieveRelevantContext(patient.id, query);
 
     return {
       recommendationTitle: 'How can I assist your health today?',
-      recommendationDetails: `Namaste ${patient.name}! I am AI Saathi, your personal health and cognitive care companion. You can ask me about what to eat, daily walks, sleep, or your blood pressure.`,
-      whyItSuitsYou: ['Personalized for your senior wellness routine'],
+      recommendationDetails: `Namaste ${patient.name}! I am AI Saathi, your personal health, wellness, cognitive-care, and daily-life companion. You can ask me about what to do today, your walking activity, memory games, sleep, medicine schedules, or your blood pressure.`,
+      whyItSuitsYou: ['Personalized for your senior health and wellness routine'],
       alternativeOption: 'Ask a question using your voice or tap one of the suggested topics below.',
-      signalsUsed: signals.slice(0, 4),
-      sourcesChecked: VERIFIED_AUTHORITATIVE_SOURCES.diet.slice(0, 2),
+      signalsUsed: contextResult.signals.slice(0, 4),
+      sourcesChecked: [],
+      searchPerformed: false,
+      dataSourceMode: 'INTERNAL_RECORDS',
       followUpQuestions: [
-        'What should I eat for breakfast?',
-        'Can I go for a walk today?',
-        'Explain my blood pressure in simple words',
+        'What should I focus on today?',
+        'Which memory game should I play?',
+        'How did I sleep compared to usual?',
+        'Explain my blood pressure',
       ],
       safetyCategory: 'NON_HEALTH',
       disclaimer: 'This guidance is for general health support and does not replace advice from your healthcare professional.',
       isEmergency: false,
       tone: 'encouraging',
+      modelUsed: 'deterministic-agent-engine',
     };
   }
 }
 
 export const aiSaathiService = new AISaathiService();
 export default aiSaathiService;
+

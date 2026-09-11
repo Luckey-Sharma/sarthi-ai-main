@@ -1,392 +1,278 @@
 import React, { useState, useEffect } from 'react';
-import { Language, FamilyMember, DDAState, DDAUpdateResult } from '../../types';
+import { Language, FamilyMember } from '../../types';
 import { culturalCards } from '../../services/mockData';
-import { createInitialDDAState, updateDDA, GAME_LEVELS } from '../../services/aiEngine';
 import { storage } from '../../services/storage';
-import { playSound, speak } from '../../services/voiceService';
-import confetti from 'canvas-confetti';
-import { RotateCcw, ArrowLeft, Trophy, Sparkles, Award, Volume2 } from 'lucide-react';
-import { t } from '../../i18n';
+import { playSound } from '../../services/voiceService';
+import { CommonGameHeader } from './CommonGameHeader';
+import { SessionEndingModal } from './SessionEndingModal';
+import { t } from '../../services/i18n';
+import { Heart, Sparkles, ArrowRight, RotateCcw, Home } from 'lucide-react';
 
 interface MemoryMatchProps {
   language: Language;
   familyMembers: FamilyMember[];
   onBack: () => void;
+  onFinishSession?: () => void;
 }
 
-interface CardItem {
-  uid: string;
+interface PhotoMatchItem {
   id: string;
-  label: string;
-  icon?: string;
-  imageUrl?: string;
-  isFlipped: boolean;
-  isMatched: boolean;
+  title: string;
+  description: string;
+  imageUrl: string;
+  culturalFact: string;
 }
 
 export const MemoryMatch: React.FC<MemoryMatchProps> = ({
   language,
   familyMembers,
   onBack,
+  onFinishSession,
 }) => {
-  const [gameMode, setGameMode] = useState<'cultural' | 'family'>('cultural');
-  const [cards, setCards] = useState<CardItem[]>([]);
-  const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
-  const [moves, setMoves] = useState<number>(0);
-  const [isWon, setIsWon] = useState<boolean>(false);
-  const [ddaState, setDdaState] = useState<DDAState>(() => storage.loadGameDDA('memory_match', 1));
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [levelResult, setLevelResult] = useState<DDAUpdateResult | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [revealed, setRevealed] = useState<boolean>(false);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [softHintId, setSoftHintId] = useState<string | null>(null);
+  const [isSessionEnded, setIsSessionEnded] = useState<boolean>(false);
+  const [isTimeCapModalOpen, setIsTimeCapModalOpen] = useState<boolean>(false);
+  const [sessionStartTime] = useState<number>(Date.now());
 
-  // Helper to determine number of pairs per level
-  const getPairsForLevel = (lvl: number) => {
-    if (lvl === 1) return 3; // 6 cards
-    if (lvl === 2) return 4; // 8 cards
-    if (lvl === 3) return 5; // 10 cards
-    if (lvl === 4) return 6; // 12 cards
-    return 8; // 16 cards (level 5)
-  };
-
-  // Initialize or reset deck with non-repetitive sampling
-  const initGame = (mode: 'cultural' | 'family', level: number) => {
-    const numPairs = getPairsForLevel(level);
-    let baseItems: { id: string; label: string; icon?: string; imageUrl?: string }[] = [];
-
-    if (mode === 'cultural') {
-      // Randomly sample numPairs from the expanded culturalCards pool
-      const shuffledPool = [...culturalCards].sort(() => Math.random() - 0.5);
-      baseItems = shuffledPool.slice(0, numPairs).map((c) => ({
-        id: c.id,
-        label: c.title[language] || c.title.en,
-        icon: c.icon,
-      }));
-    } else {
-      const storedFamily = storage.loadFamilyMembers();
-      const rawFamily = familyMembers.length >= 2 ? familyMembers : storedFamily;
-      const activeFamily = rawFamily.length >= 2 ? rawFamily : [
-        { id: 'f1', name: 'Ananya (Daughter)', relation: 'Daughter', photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80', memoryHint: '', favoriteMemory: '', hometown: '' },
-        { id: 'f2', name: 'Arnob (Grandson)', relation: 'Grandson', photoUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80', memoryHint: '', favoriteMemory: '', hometown: '' },
-      ];
-      // Randomly shuffle family list if more than numPairs
-      const shuffledFamily = [...activeFamily].sort(() => Math.random() - 0.5);
-      baseItems = shuffledFamily.slice(0, numPairs).map((f) => ({
-        id: f.id,
-        label: `${f.name} (${f.relation})`,
-        imageUrl: f.photoUrl,
-      }));
-    }
-
-    const deck: CardItem[] = [];
-    baseItems.forEach((item, idx) => {
-      deck.push({
-        uid: `${item.id}-a-${idx}`,
-        id: item.id,
-        label: item.label,
-        icon: item.icon,
-        imageUrl: item.imageUrl,
-        isFlipped: false,
-        isMatched: false,
-      });
-      deck.push({
-        uid: `${item.id}-b-${idx}`,
-        id: item.id,
-        label: item.label,
-        icon: item.icon,
-        imageUrl: item.imageUrl,
-        isFlipped: false,
-        isMatched: false,
-      });
-    });
-
-    // Shuffle
-    const shuffled = deck.sort(() => Math.random() - 0.5);
-    setCards(shuffled);
-    setFlippedIndices([]);
-    setMoves(0);
-    setIsWon(false);
-    setStartTime(Date.now());
-  };
-
+  // 12-15 min soft session cap
   useEffect(() => {
-    initGame(gameMode, ddaState.level);
-  }, [gameMode, language]);
+    const timer = setTimeout(() => {
+      setIsTimeCapModalOpen(true);
+    }, 12 * 60 * 1000); // 12 minutes
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleCardClick = (index: number) => {
-    if (flippedIndices.length === 2 || cards[index].isFlipped || cards[index].isMatched) {
-      return;
-    }
+  // Items mapped from rich cultural cards
+  const items: PhotoMatchItem[] = culturalCards.map((c) => ({
+    id: c.id,
+    title: c.title[language] || c.title.en,
+    description: c.description[language] || c.description.en,
+    imageUrl: c.imageUrl || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=600&q=80',
+    culturalFact: c.culturalFact,
+  }));
 
-    playSound('click');
-    const newCards = [...cards];
-    newCards[index].isFlipped = true;
-    setCards(newCards);
+  const currentItem = items[currentIndex % items.length] || items[0];
 
-    const newFlipped = [...flippedIndices, index];
-    setFlippedIndices(newFlipped);
+  // Provide 2 choices (current item + 1 other for gentle recognition)
+  const choices = React.useMemo(() => {
+    const others = items.filter((item) => item.id !== currentItem.id);
+    const randomOther = others[Math.floor(Math.random() * others.length)] || others[0];
+    return [currentItem, randomOther].sort(() => Math.random() - 0.5);
+  }, [currentIndex, currentItem.id]);
 
-    if (newFlipped.length === 2) {
-      setMoves((m) => m + 1);
-      const [firstIdx, secondIdx] = newFlipped;
-      const firstCard = cards[firstIdx];
-      const secondCard = cards[secondIdx];
+  const handleSelectChoice = (choiceId: string) => {
+    setSelectedOptionId(choiceId);
 
-      if (firstCard.id === secondCard.id) {
-        // Matched!
-        setTimeout(() => {
-          playSound('success');
-          setCards((prev) => {
-            const matchedCards = [...prev];
-            if (matchedCards[firstIdx]) matchedCards[firstIdx] = { ...matchedCards[firstIdx], isMatched: true };
-            if (matchedCards[secondIdx]) matchedCards[secondIdx] = { ...matchedCards[secondIdx], isMatched: true };
-
-            if (matchedCards.every((c) => c.isMatched)) {
-              const timeTakenMs = Date.now() - startTime;
-              handleWin(timeTakenMs);
-            }
-            return matchedCards;
-          });
-          setFlippedIndices([]);
-        }, 500);
-      } else {
-        // Not matched
-        setTimeout(() => {
-          setCards((prev) => {
-            const resetCards = [...prev];
-            if (resetCards[firstIdx]) resetCards[firstIdx] = { ...resetCards[firstIdx], isFlipped: false };
-            if (resetCards[secondIdx]) resetCards[secondIdx] = { ...resetCards[secondIdx], isFlipped: false };
-            return resetCards;
-          });
-          setFlippedIndices([]);
-        }, 1100);
-      }
+    if (choiceId === currentItem.id) {
+      // Gentle match!
+      playSound('success');
+      setRevealed(true);
+    } else {
+      // Gentle guidance without penalty or red color
+      playSound('click');
+      setSoftHintId(currentItem.id);
+      // Reveal answer with warm encouragement after a gentle pause
+      setTimeout(() => {
+        setRevealed(true);
+      }, 1000);
     }
   };
 
-  const handleWin = (timeTakenMs: number) => {
-    setIsWon(true);
-
-    const numPairs = cards.length / 2;
-    const optimalMoves = numPairs;
-    const accuracy = Math.max(0.4, Math.min(1.0, optimalMoves / Math.max(optimalMoves, moves)));
-    const avgReactionTime = Math.round(timeTakenMs / Math.max(1, moves));
-
-    // Update and persist DDA state
-    const updated = updateDDA(ddaState, {
-      success: true,
-      accuracy,
-      reactionTimeMs: avgReactionTime,
-    });
-    setDdaState(updated);
-    storage.saveGameDDA('memory_match', updated);
-    setLevelResult(updated);
-
-    if (updated.leveledUp) {
-      confetti({ particleCount: 100, spread: 90, origin: { y: 0.5 } });
-      if (updated.feedbackMessage) {
-        speak(updated.feedbackMessage[language], language);
-      }
+  const handleNext = () => {
+    if (currentIndex + 1 >= items.length) {
+      setIsSessionEnded(true);
     } else {
-      confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+      setCurrentIndex((prev) => prev + 1);
+      setRevealed(false);
+      setSelectedOptionId(null);
+      setSoftHintId(null);
     }
+  };
 
-    // Persist session
-    const calculatedScore = Math.max(50, Math.min(100, Math.round(100 - (moves - numPairs) * 5)));
-    storage.saveCognitiveSession({
-      id: `sess-${Date.now()}`,
-      gameId: 'memory_match',
-      domain: 'visual_spatial',
-      timestamp: new Date().toISOString(),
-      date: new Date().toISOString().split('T')[0],
-      score: calculatedScore,
-      maxScore: 100,
-      accuracy,
-      reactionTimeMs: avgReactionTime,
-      difficultyLevel: updated.level,
-    });
+  const readAloudText = `${currentItem.title}. ${currentItem.description}`;
+
+  const handleFinishEarly = () => {
+    if (onFinishSession) {
+      onFinishSession();
+    } else {
+      setIsSessionEnded(true);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Top Bar Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-3xl shadow-xs border border-amber-200">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-sm font-bold transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{t('back', language)}</span>
-        </button>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20 font-sans">
+      {/* Unified Calm Header */}
+      <CommonGameHeader
+        language={language}
+        title={t('memoryMatchTitle', language)}
+        subtitle={language === 'as' ? 'পৰম্পৰাগত সাংস্কৃতিক সঁজুলিৰ চিনাকি' : language === 'bn' ? 'ঐতিহ্যবাহী পরিচিত স্মারক ও সংস্কৃতির আনন্দ' : language === 'hi' ? 'सांस्कृतिक धरोहर व आत्मीय यादें' : 'Recognizing Familiar Heritage Treasures'}
+        readAloudText={readAloudText}
+        onBack={onBack}
+        onFinishEarly={handleFinishEarly}
+      />
 
-        {/* Mode Selector */}
-        <div className="flex items-center gap-1.5 bg-amber-50 p-1.5 rounded-2xl border border-amber-200">
-          <button
-            onClick={() => setGameMode('cultural')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              gameMode === 'cultural'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
-            }`}
-          >
-            🌿 {t('games.memoryMatch.culturalArtifactsTab', language)}
-          </button>
-          <button
-            onClick={() => setGameMode('family')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              gameMode === 'family'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
-            }`}
-          >
-            👨‍👩‍👧 {t('games.memoryMatch.familyPhotosTab', language)}
-          </button>
-        </div>
-
-        {/* Level Badge & Stats */}
-        <div className="flex items-center gap-3 text-xs font-bold text-stone-700">
-          <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-2xl border border-emerald-200 shadow-2xs">
-            <span className="text-base">{GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🌿'}</span>
-            <span className="text-xs font-black text-emerald-800">
-              {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}
-            </span>
+      {/* Main Single-Task Dementia-Friendly Reminiscence Screen */}
+      {!isSessionEnded ? (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-[#becabf]/60 space-y-6 transition-all">
+          {/* Gentle Instruction: Single clear instruction */}
+          <div className="text-center space-y-2">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] leading-relaxed">
+              {language === 'as'
+                ? 'এইখন চিনাকি ফটো চাওক। ইয়াৰ নাম কি?'
+                : language === 'bn'
+                ? 'এই পরিচিত ছবিটি দেখুন। এটি কী নামে পরিচিত?'
+                : language === 'hi'
+                ? 'इस जानी-पहचानी तस्वीर को देखें। इसका क्या नाम है?'
+                : language === 'mni'
+                ? 'Photo ashi yengbiyu. Ashigi ming kari koubage?'
+                : 'Which familiar heritage treasure is shown in this photo?'}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#3e4941] font-medium">
+              {language === 'as'
+                ? 'তলৰ বিকল্পটোত আলফুলে চুই বাছনি কৰক।'
+                : language === 'bn'
+                ? 'নিচের বিকল্পটিতে আলতোভাবে স্পর্শ করুন।'
+                : language === 'hi'
+                ? 'नीचे दिए गए विकल्प को सहजता से स्पर्श करें।'
+                : 'Tap gently on the label that looks familiar.'}
+            </p>
           </div>
-          <span className="bg-stone-100 px-3 py-1.5 rounded-xl">
-            {t('common.moves', language)}: <strong className="text-emerald-700 text-sm">{moves}</strong>
-          </span>
-          <button
-            onClick={() => initGame(gameMode, ddaState.level)}
-            className="p-2 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl cursor-pointer"
-            title={t('common.retry', language)}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
 
-      {/* Game Header */}
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl sm:text-3xl font-black text-stone-900">
-          {gameMode === 'cultural' ? t('games.memoryMatch.title', language) : t('games.memoryMatch.familyPhotosTab', language)}
-        </h2>
-        <div className="flex items-center justify-center gap-2">
-          <p className="text-sm text-stone-600 font-medium">
-            {t('games.memoryMatch.subtitle', language)}
-          </p>
-          <button
-            onClick={() => speak(t('games.memoryMatch.subtitle', language), language)}
-            className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer transition-colors"
-            title={t('common.readAloud', language)}
-            aria-label={t('common.readAloud', language)}
-          >
-            <Volume2 className="w-4 h-4 text-emerald-700" />
-          </button>
-        </div>
-      </div>
+          {/* Large High-Contrast Reminiscence Photo */}
+          <div className="relative mx-auto max-w-md h-64 sm:h-72 rounded-3xl overflow-hidden shadow-lg border-3 border-[#becabf]/60 bg-[#f7faf5]">
+            <img
+              src={currentItem.imageUrl}
+              alt={currentItem.title}
+              className="w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+            />
+          </div>
 
-      {/* 3D Flip Card Grid */}
-      <div
-        className={`grid gap-4 sm:gap-5 justify-center mx-auto ${
-          cards.length <= 8
-            ? 'grid-cols-2 sm:grid-cols-4 max-w-2xl'
-            : 'grid-cols-3 sm:grid-cols-4 max-w-3xl'
-        }`}
-      >
-        {cards.map((card, idx) => {
-          const isRevealed = card.isFlipped || card.isMatched;
-          return (
-            <div
-              key={card.uid}
-              onClick={() => handleCardClick(idx)}
-              className="perspective-1000 h-36 sm:h-44 w-full cursor-pointer select-none"
-            >
-              <div
-                className={`relative w-full h-full duration-500 transform-style-3d transition-transform rounded-3xl ${
-                  isRevealed ? 'rotate-y-180' : ''
-                }`}
-              >
-                {/* Front (Hidden Face) */}
-                <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900 text-white rounded-3xl p-4 flex flex-col items-center justify-center shadow-lg border-2 border-emerald-500/50 hover:border-amber-300 transition-colors">
-                  <span className="text-4xl sm:text-5xl opacity-80">🌿</span>
-                  <span className="text-[11px] font-bold mt-2 text-emerald-200 tracking-wider">
-                    {t('touchToFlip', language)}
-                  </span>
-                </div>
+          {/* Simple Choices (Zero Pressure, No Red Borders, Soft Guidance) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+            {choices.map((choice) => {
+              const isChosen = selectedOptionId === choice.id;
+              const isTarget = choice.id === currentItem.id;
+              const isHinted = softHintId === choice.id;
 
-                {/* Back (Revealed Face) */}
-                <div
-                  className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-3xl p-3 sm:p-4 flex flex-col items-center justify-center shadow-xl border-4 transition-all ${
-                    card.isMatched
-                      ? 'bg-emerald-50 border-emerald-500 ring-4 ring-emerald-300/40'
-                      : 'bg-white border-amber-300'
-                  }`}
+              let btnStyle = 'bg-[#f7faf5] hover:bg-[#ecefea] text-[#032517] border-[#becabf]/70';
+
+              if (revealed && isTarget) {
+                // Soft green warm highlight for the match
+                btnStyle = 'bg-[#bfebba]/50 border-[#416740] text-[#032517] ring-2 ring-[#416740]/30 shadow-sm';
+              } else if (isHinted) {
+                // Gentle soft amber guidance highlight (never red!)
+                btnStyle = 'bg-amber-50 border-amber-300 text-[#032517] shadow-sm';
+              }
+
+              return (
+                <button
+                  key={choice.id}
+                  disabled={revealed}
+                  onClick={() => handleSelectChoice(choice.id)}
+                  className={`p-5 rounded-2xl border-2 text-base sm:text-lg font-serif font-bold text-center transition-all cursor-pointer min-h-[72px] flex items-center justify-center gap-2 ${btnStyle}`}
                 >
-                  {card.imageUrl ? (
-                    <img
-                      src={card.imageUrl}
-                      alt={card.label}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-xs mb-1"
-                    />
-                  ) : (
-                    <span className="text-4xl sm:text-5xl mb-2">{card.icon || '🌸'}</span>
+                  <span>{choice.title}</span>
+                  {revealed && isTarget && (
+                    <span className="text-[#416740] font-black text-sm">✓</span>
                   )}
-                  <p className="text-xs sm:text-sm font-extrabold text-stone-800 text-center line-clamp-2">
-                    {card.label}
-                  </p>
-                  {card.isMatched && (
-                    <span className="mt-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      ✓ {t('matched', language)}
-                    </span>
-                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Revealed Warm Cultural Memory Story & Next Button */}
+          {revealed && (
+            <div className="pt-3 space-y-4 animate-in fade-in duration-500">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#bfebba]/25 border border-[#416740]/30 text-xs sm:text-sm text-[#032517] leading-relaxed">
+                <div className="font-bold text-[#032517] mb-1">
+                  🌿 {currentItem.title}
                 </div>
+                <p className="text-[#3e4941]">
+                  {currentItem.description}
+                </p>
+                {currentItem.culturalFact && (
+                  <p className="text-[#6f7a70] text-xs italic mt-2">
+                    💡 {currentItem.culturalFact}
+                  </p>
+                )}
+              </div>
+
+              <div className="text-center pt-2">
+                <button
+                  onClick={handleNext}
+                  className="px-8 py-4 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-base shadow-md transition-transform active:scale-[0.98] cursor-pointer inline-flex items-center gap-2"
+                >
+                  <span>{t('exploreAnotherPhoto', language)}</span>
+                  <span>➔</span>
+                </button>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Win Banner */}
-      {isWon && (
-        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-6 rounded-3xl shadow-xl text-center animate-in zoom-in-95 duration-300">
-          <div className="w-16 h-16 rounded-full bg-white/20 mx-auto flex items-center justify-center text-3xl mb-3">
-            <Trophy className="w-8 h-8 text-amber-300" />
-          </div>
-          <h3 className="text-2xl sm:text-3xl font-black">{t('memoryWonTitle', language)}</h3>
-          <p className="text-emerald-100 font-medium text-sm mt-1">
-            {t('memoryWonSubtitle', language)}
-          </p>
-
-          {/* Level Adaptive Feedback */}
-          {levelResult && (
-            <div className={`mt-4 mx-auto max-w-md p-3.5 rounded-2xl flex items-center justify-center gap-2.5 font-black text-sm shadow-md ${
-              levelResult.leveledUp
-                ? 'bg-amber-400 text-stone-950 animate-bounce'
-                : 'bg-white/20 text-white backdrop-blur-xs'
-            }`}>
-              <span className="text-xl">
-                {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🌿'}
-              </span>
-              <span>
-                {levelResult.feedbackMessage?.[language] ||
-                  `${GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}`}
-              </span>
-            </div>
           )}
+        </div>
+      ) : (
+        /* Neutral, Positive Finish Screen (Requirement 1 & 3: NO SCORES, WARM AFFIRMATION) */
+        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-md border-2 border-[#becabf]/60 text-center space-y-5 animate-in fade-in duration-500 font-sans">
+          <div className="w-16 h-16 rounded-full bg-[#bfebba]/50 text-[#032517] mx-auto flex items-center justify-center text-3xl shadow-xs">
+            🌿
+          </div>
 
-          <div className="mt-5 flex items-center justify-center gap-3">
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#032517]">
+              {t('sessionCompleteMessage', language)}
+            </h2>
+            <p className="text-sm text-[#3e4941] font-medium max-w-md mx-auto leading-relaxed">
+              {language === 'as'
+                ? 'আজিৰ সকলো সাংস্কৃতিক ফটো সুন্দৰভাৱে উপভোগ কৰা হ’ল। মন শান্ত আৰু প্ৰশান্তিময় হৈ থাকক।'
+                : language === 'bn'
+                ? 'আজকের সকল স্মৃতিময় ছবি আমরা একসাথে উপভোগ করলাম। মন শান্ত ও স্নিগ্ধ থাকুক।'
+                : language === 'hi'
+                ? 'आज की सभी सांस्कृतिक तस्वीरें हमने साथ मिलकर देखीं। मन शांत और प्रसन्न रहे।'
+                : 'All heritage treasures were explored in a peaceful, joyful atmosphere.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
             <button
-              onClick={() => initGame(gameMode, ddaState.level)}
-              className="px-6 py-3 bg-white text-emerald-800 hover:bg-amber-50 font-extrabold rounded-2xl text-sm shadow-md transition-transform active:scale-95"
+              onClick={() => {
+                if (onFinishSession) {
+                  onFinishSession();
+                } else {
+                  onBack();
+                }
+              }}
+              className="py-3.5 px-6 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-sm shadow-md transition-transform active:scale-[0.98] cursor-pointer"
             >
-              {t('playAgain', language)}
+              {language === 'as' ? 'সত্ৰৰ সাৰাংশ চাওক' : language === 'bn' ? 'সেশনের সারাংশ দেখুন' : language === 'hi' ? 'सत्र सारांश देखें' : 'View Session Summary'}
             </button>
             <button
-              onClick={onBack}
-              className="px-6 py-3 bg-emerald-800/80 hover:bg-emerald-900 font-extrabold rounded-2xl text-sm text-white"
+              onClick={() => {
+                setCurrentIndex(0);
+                setRevealed(false);
+                setSelectedOptionId(null);
+                setSoftHintId(null);
+                setIsSessionEnded(false);
+              }}
+              className="py-3.5 px-6 bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] font-extrabold rounded-2xl text-sm border border-[#becabf]/60 cursor-pointer"
             >
-              {t('home', language)}
+              {t('exploreAnotherPhoto', language)}
             </button>
           </div>
         </div>
       )}
+
+      {/* 10-15 Min Gentle Session Ending Cap */}
+      <SessionEndingModal
+        isOpen={isTimeCapModalOpen}
+        language={language}
+        onFinish={() => {
+          setIsTimeCapModalOpen(false);
+          handleFinishEarly();
+        }}
+        onContinue={() => setIsTimeCapModalOpen(false)}
+      />
     </div>
   );
 };

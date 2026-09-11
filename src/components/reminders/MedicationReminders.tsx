@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Language, Medication } from '../../types';
 import { storage } from '../../services/storage';
-import { playSound, speak } from '../../services/voiceService';
+import { playSound, speak, stopSpeaking } from '../../services/voiceService';
 import { t } from '../../services/i18n';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, Pill, Droplet, Check, Clock, Sun, Sunset, Moon, Plus } from 'lucide-react';
+import { ArrowLeft, Pill, Droplet, Check, Clock, Sun, Sunset, Moon, Plus, Volume2, VolumeX } from 'lucide-react';
 
 interface MedicationRemindersProps {
   language: Language;
@@ -17,6 +17,53 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
 }) => {
   const [meds, setMeds] = useState<Medication[]>(() => storage.loadMedications());
   const [waterCount, setWaterCount] = useState<number>(() => storage.loadWaterCount());
+  const [activeSpeakingId, setActiveSpeakingId] = useState<string | null>(null);
+
+  const handleSpeakMedication = (med: Medication) => {
+    if (activeSpeakingId === med.id) {
+      stopSpeaking();
+      setActiveSpeakingId(null);
+      return;
+    }
+    stopSpeaking();
+    setActiveSpeakingId(med.id);
+    const speech =
+      language === 'as'
+        ? `ঔষধৰ নাম: ${med.name}। মাত্ৰা: ${med.dosage}। সময়: ${med.time}। নিৰ্দেশনা: ${med.instructions}।`
+        : language === 'bn'
+        ? `ওষুধের নাম: ${med.name}। মাত্রা: ${med.dosage}। সময়: ${med.time}। নির্দেশ: ${med.instructions}।`
+        : language === 'hi'
+        ? `दवाई का नाम: ${med.name}। खुराक: ${med.dosage}। समय: ${med.time}। निर्देश: ${med.instructions}।`
+        : language === 'mni'
+        ? `Hidak ming: ${med.name}। Matam: ${med.time}। Instruction: ${med.instructions}।`
+        : `Medication: ${med.name}. Dosage: ${med.dosage}. Scheduled for ${med.time}. Note: ${med.instructions}.`;
+    speak(speech, language, () => {
+      setActiveSpeakingId(null);
+    });
+  };
+
+  const handleSpeakHydration = () => {
+    if (activeSpeakingId === 'water') {
+      stopSpeaking();
+      setActiveSpeakingId(null);
+      return;
+    }
+    stopSpeaking();
+    setActiveSpeakingId('water');
+    const speech =
+      language === 'as'
+        ? `আজিৰ পানীৰ লক্ষ্য: ৮ গিলাচ। বৰ্তমানলৈকে ${waterCount} গিলাচ সম্পূৰ্ণ হৈছে।`
+        : language === 'bn'
+        ? `আজকের পানির লক্ষ্য: ৮ গ্লাস। বর্তমান পর্যন্ত ${waterCount} গ্লাস সম্পন্ন হয়েছে।`
+        : language === 'hi'
+        ? `आज का जलपान लक्ष्य: 8 गिलास। अब तक आपने ${waterCount} गिलास पानी पिया है।`
+        : language === 'mni'
+        ? `Nongmagi ishing thakpagi pandam glass 8. Houjik faobada glass ${waterCount} thakle.`
+        : `Daily hydration goal: 8 glasses. You have reached ${waterCount} glasses so far today.`;
+    speak(speech, language, () => {
+      setActiveSpeakingId(null);
+    });
+  };
 
   const handleToggleTaken = (id: string) => {
     const updated = meds.map((m) => {
@@ -24,20 +71,6 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
         const nextState = !m.takenToday;
         if (nextState) {
           playSound('success');
-          speak(
-            language === 'en'
-              ? `${m.name} marked as taken. Good job!`
-              : language === 'as'
-              ? `${m.name} ঔষধ খোৱা সম্পূৰ্ণ হ’ল।`
-              : language === 'bn'
-              ? `${m.name} ওষুধ খাওয়া সম্পন্ন হয়েছে।`
-              : language === 'hi'
-              ? `${m.name} दवा ले ली गई। बहुत अच्छा!`
-              : language === 'mni'
-              ? `${m.name} hidak charre. Yamna Fai!`
-              : `${m.name} marked as taken. Good job!`,
-            language
-          );
         }
         return { ...m, takenToday: nextState };
       }
@@ -57,20 +90,6 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
     if (newCount === 8) {
       playSound('success');
       confetti({ particleCount: 40, spread: 60 });
-      speak(
-        language === 'en'
-          ? 'Congratulations! You reached your daily hydration goal of 8 glasses!'
-          : language === 'as'
-          ? 'অভিনন্দন! আপুনি আজিৰ বাবে প্ৰয়োজনীয় ৮ গিলাচ পানী খোৱা সম্পূৰ্ণ কৰিলে।'
-          : language === 'bn'
-          ? 'অভিনন্দন! আপনি আজকের ৮ গ্লাস পানি খাওয়ার লক্ষ্য পূরণ করেছেন।'
-          : language === 'hi'
-          ? 'बधाई हो! आपने आज का 8 गिलास पानी पीने का लक्ष्य पूरा कर लिया।'
-          : language === 'mni'
-          ? 'Yamna nungngaijare! Nongmagi ishing glass 8 thakpagi pandam ngamle!'
-          : 'Congratulations! You reached your daily hydration goal of 8 glasses!',
-        language
-      );
     }
   };
 
@@ -83,28 +102,34 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
   const getBucketIcon = (timeOfDay: Medication['timeOfDay']) => {
     switch (timeOfDay) {
       case 'morning':
-        return <Sun className="w-5 h-5 text-amber-500" />;
+        return <Sun className="w-5 h-5 text-[#9A662C]" />;
       case 'afternoon':
-        return <Sunset className="w-5 h-5 text-orange-500" />;
+        return <Sunset className="w-5 h-5 text-[#D49544]" />;
       case 'night':
-        return <Moon className="w-5 h-5 text-indigo-500" />;
+        return <Moon className="w-5 h-5 text-[#6B618F]" />;
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12 font-sans text-[#1F342A]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-xs border border-amber-200">
+      <div
+        className="flex items-center justify-between p-4 rounded-2xl shadow-cognitiva-sm border border-[rgba(70,80,60,0.08)]"
+        style={{ backgroundColor: '#FBF7EF' }}
+      >
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-sm font-bold transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-[#FAF5EB] hover:bg-[#EAE4D7] text-[#1F342A] rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-[rgba(70,80,60,0.08)]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>{t('back', language)}</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-bold text-stone-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl">
-          <Pill className="w-4 h-4 text-blue-600" />
+        <div
+          className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-[rgba(70,80,60,0.08)] text-[#365A46]"
+          style={{ backgroundColor: '#E4EBDD' }}
+        >
+          <Pill className="w-4 h-4 text-[#52745C]" />
           <span>
             {language === 'hi' ? 'दैनिक देखभाल और जलयोजन' :
              language === 'as' ? 'দৈনন্দিন যত্ন আৰু জলপান' :
@@ -117,36 +142,60 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
 
       {/* Title */}
       <div className="text-center">
-        <h2 className="text-3xl font-black text-stone-900 flex items-center justify-center gap-2">
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1F342A] flex items-center justify-center gap-2">
           <span>{t('medicationTitle', language)}</span>
-          <span>💊</span>
+          <span>🌱</span>
         </h2>
-        <p className="text-stone-600 text-sm font-medium mt-1">
+        <p className="text-[#68736B] text-xs sm:text-sm font-medium mt-1">
           {t('medicationSubtitle', language)}
         </p>
       </div>
 
       {/* Hydration Tracker Card */}
-      <div className="bg-gradient-to-br from-blue-600 to-teal-600 text-white rounded-3xl p-6 sm:p-7 shadow-xl">
+      <div
+        className="rounded-[20px] p-6 sm:p-7 shadow-cognitiva text-[#FFFDF7]"
+        style={{
+          background: 'linear-gradient(135deg, #52745C 0%, #365A46 100%)',
+        }}
+      >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl">
               💧
             </div>
             <div>
-              <h3 className="text-xl font-black">
-                {t('waterWidgetTitle', language)}
-              </h3>
-              <p className="text-xs text-blue-100 font-medium">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-serif font-bold">
+                  {t('waterWidgetTitle', language)}
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleSpeakHydration}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    activeSpeakingId === 'water'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                  title={activeSpeakingId === 'water' ? 'Stop audio' : 'Listen to hydration goal'}
+                  aria-label="Listen to hydration goal"
+                >
+                  {activeSpeakingId === 'water' ? (
+                    <VolumeX className="w-3.5 h-3.5" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-[#EAEFE6] font-medium">
                 {t('waterGoal', language)}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="text-center">
-              <span className="text-3xl sm:text-4xl font-black">{waterCount}</span>
-              <span className="text-xs text-blue-200 font-bold"> / 8 {t('waterUnit', language)}</span>
+              <span className="text-3xl sm:text-4xl font-serif font-bold">{waterCount}</span>
+              <span className="text-xs text-[#EAEFE6] font-semibold"> / 8 {t('waterUnit', language)}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -159,9 +208,9 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
               </button>
               <button
                 onClick={handleAddWater}
-                className="px-4 py-2.5 rounded-xl bg-white text-blue-900 hover:bg-blue-50 font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#FAF6EE] text-[#1F342A] hover:bg-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 text-[#52745C]" />
                 <span>{t('addGlass', language)}</span>
               </button>
             </div>
@@ -173,10 +222,10 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className={`h-12 rounded-xl flex items-center justify-center text-xl transition-all ${
+              className={`h-11 rounded-xl flex items-center justify-center text-lg transition-all ${
                 i < waterCount
-                  ? 'bg-white text-blue-600 shadow-md font-bold'
-                  : 'bg-white/10 text-white/40 border border-white/20'
+                  ? 'bg-white text-[#365A46] shadow-sm font-bold'
+                  : 'bg-white/15 text-white/40 border border-white/20'
               }`}
             >
               🥤
@@ -187,9 +236,12 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
 
       {/* Medication List */}
       <div className="space-y-3">
-        <h3 className="text-lg font-black text-stone-800 flex items-center gap-2">
+        <h3 className="text-base sm:text-lg font-serif font-bold text-[#1F342A] flex items-center gap-2">
           <span>{t('todaysMeds', language)}</span>
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-stone-200 text-stone-700">
+          <span
+            className="text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[rgba(70,80,60,0.08)] text-[#365A46]"
+            style={{ backgroundColor: '#E4EBDD' }}
+          >
             {meds.filter((m) => m.takenToday).length} / {meds.length} {t('completed', language)}
           </span>
         </h3>
@@ -197,47 +249,71 @@ export const MedicationReminders: React.FC<MedicationRemindersProps> = ({
         {meds.map((med) => (
           <div
             key={med.id}
-            className={`p-5 rounded-3xl border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+            className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-cognitiva-sm ${
               med.takenToday
-                ? 'bg-emerald-50/60 border-emerald-300'
-                : 'bg-white border-stone-200 shadow-sm hover:border-amber-300'
+                ? 'bg-[#E4EBDD]/60 border-[rgba(70,80,60,0.12)]'
+                : 'bg-[#FBF7EF] border-[rgba(70,80,60,0.08)] hover:border-[#52745C]'
             }`}
           >
             <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-[rgba(70,80,60,0.08)] shadow-2xs"
+                style={{ backgroundColor: med.takenToday ? '#E4EBDD' : '#F5EFE4' }}
+              >
                 {getBucketIcon(med.timeOfDay)}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-base sm:text-lg font-black text-stone-900 truncate">
+                  <h4 className="font-serif font-bold text-base sm:text-lg text-[#1F342A] truncate">
                     {med.name}
                   </h4>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF5EB] text-[#68736B] border border-[rgba(70,80,60,0.08)]">
                     {med.dosage}
                   </span>
-                  <span className="text-xs font-semibold text-stone-400 flex items-center gap-1">
+                  <span className="text-xs font-medium text-[#8A918A] flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     <span>{med.time}</span>
                   </span>
                 </div>
-                <p className="text-xs text-stone-500 font-medium mt-1">
+                <p className="text-xs text-[#68736B] font-medium mt-1">
                   {med.instructions}
                 </p>
               </div>
             </div>
 
-            {/* Taken Toggle Button */}
-            <button
-              onClick={() => handleToggleTaken(med.id)}
-              className={`w-full sm:w-auto px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 ${
-                med.takenToday
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
-              }`}
-            >
-              <Check className={`w-4 h-4 ${med.takenToday ? 'stroke-[3]' : ''}`} />
-              <span>{med.takenToday ? t('taken', language) : t('tapToConfirm', language)}</span>
-            </button>
+            {/* Actions: Manual Listen & Taken Toggle */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => handleSpeakMedication(med)}
+                className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                  activeSpeakingId === med.id
+                    ? 'bg-[#52745C] text-white border-[#52745C]'
+                    : 'bg-[#FAF5EB] hover:bg-[#EAE4D7] text-[#1F342A] border-[rgba(70,80,60,0.10)]'
+                }`}
+                title={activeSpeakingId === med.id ? 'Stop speech' : 'Listen to instructions'}
+                aria-label="Listen to medication instructions"
+              >
+                {activeSpeakingId === med.id ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4 text-[#52745C]" />
+                )}
+              </button>
+
+              {/* Taken Toggle Button */}
+              <button
+                onClick={() => handleToggleTaken(med.id)}
+                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  med.takenToday
+                    ? 'bg-[#52745C] text-white shadow-sm'
+                    : 'bg-[#E4EBDD] hover:bg-[#DCEADB] text-[#365A46] border border-[rgba(70,80,60,0.12)]'
+                }`}
+              >
+                <Check className={`w-4 h-4 ${med.takenToday ? 'stroke-[3]' : ''}`} />
+                <span>{med.takenToday ? t('taken', language) : t('tapToConfirm', language)}</span>
+              </button>
+            </div>
           </div>
         ))}
       </div>

@@ -1,292 +1,250 @@
 import React, { useState, useEffect } from 'react';
-import { Language, SoundCard, DDAState, DDAUpdateResult } from '../../types';
-import { soundCards } from '../../services/mockData';
-import { playSound, speak } from '../../services/voiceService';
-import { updateDDA, GAME_LEVELS } from '../../services/aiEngine';
-import { storage } from '../../services/storage';
+import { Language } from '../../types';
+import { folkSongs } from '../../services/mockData';
+import { playFolkTune, stopFolkTune, playSound } from '../../services/voiceService';
+import { CommonGameHeader } from './CommonGameHeader';
+import { SessionEndingModal } from './SessionEndingModal';
 import { t } from '../../services/i18n';
-import confetti from 'canvas-confetti';
-import { ArrowLeft, Volume2, CheckCircle2, XCircle, Trophy, Award } from 'lucide-react';
+import { Music, Volume2, Sparkles, ArrowRight, RotateCcw, Heart } from 'lucide-react';
 
 interface SoundsOfHillsProps {
   language: Language;
   onBack: () => void;
+  onFinishSession?: () => void;
 }
 
 export const SoundsOfHills: React.FC<SoundsOfHillsProps> = ({
   language,
   onBack,
+  onFinishSession,
 }) => {
-  const [ddaState, setDdaState] = useState<DDAState>(() => storage.loadGameDDA('sounds_hills', 1));
-  const [activeSounds, setActiveSounds] = useState<SoundCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [options, setOptions] = useState<SoundCard[]>([]);
-  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [score, setScore] = useState<number>(0);
-  const [isFinished, setIsFinished] = useState<boolean>(false);
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [levelResult, setLevelResult] = useState<DDAUpdateResult | null>(null);
+  const [isPlayingTune, setIsPlayingTune] = useState<boolean>(false);
+  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isSessionEnded, setIsSessionEnded] = useState<boolean>(false);
+  const [isTimeCapModalOpen, setIsTimeCapModalOpen] = useState<boolean>(false);
 
-  // Determine distractor count by level (L1: 2 choices total, L2-3: 3 choices, L4-5: 4 choices)
-  const getChoiceCountForLevel = (lvl: number) => {
-    if (lvl === 1) return 2;
-    if (lvl <= 3) return 3;
-    return 4;
-  };
-
-  const generateOptions = (target: SoundCard, lvl: number): SoundCard[] => {
-    const choiceCount = getChoiceCountForLevel(lvl);
-    const others = soundCards.filter((s) => s.id !== target.id).sort(() => Math.random() - 0.5);
-    const distractors = others.slice(0, choiceCount - 1);
-    return [target, ...distractors].sort(() => Math.random() - 0.5);
-  };
-
-  // Sample 4 sounds per session from soundCards pool
-  const initRound = (lvl: number) => {
-    const shuffled = [...soundCards].sort(() => Math.random() - 0.5).slice(0, 4);
-    setActiveSounds(shuffled);
-    setCurrentIndex(0);
-    setSelectedId(null);
-    setScore(0);
-    setIsFinished(false);
-    setLevelResult(null);
-    setStartTime(Date.now());
-    if (shuffled.length > 0) {
-      setOptions(generateOptions(shuffled[0], lvl));
-    }
-  };
-
+  // 12-15 min gentle session cap
   useEffect(() => {
-    initRound(ddaState.level);
+    const timer = setTimeout(() => {
+      setIsTimeCapModalOpen(true);
+    }, 12 * 60 * 1000);
+    return () => clearTimeout(timer);
   }, []);
 
-  const currentSound = activeSounds[currentIndex] || soundCards[0];
+  // Cleanup tune on unmount
+  useEffect(() => {
+    return () => {
+      stopFolkTune();
+    };
+  }, []);
 
-  const handlePlaySound = () => {
-    if (!currentSound) return;
-    setIsPlayingAudio(true);
-    playSound(currentSound.soundType);
-    setTimeout(() => {
-      setIsPlayingAudio(false);
-    }, 2200);
-  };
+  const currentSong = folkSongs[currentIndex % folkSongs.length] || folkSongs[0];
 
-  const handleSelectOption = (card: SoundCard) => {
-    if (selectedId || !currentSound) return;
-    setSelectedId(card.id);
-
-    const isCorrect = card.id === currentSound.id;
-    if (isCorrect) {
-      playSound('success');
-      setScore((s) => s + 1);
-    } else {
-      playSound('click');
-    }
-
-    setTimeout(() => {
-      if (currentIndex + 1 < activeSounds.length) {
-        const nextIndex = currentIndex + 1;
-        setCurrentIndex(nextIndex);
-        setSelectedId(null);
-        setOptions(generateOptions(activeSounds[nextIndex], ddaState.level));
-      } else {
-        finishGame(score + (isCorrect ? 1 : 0));
-      }
-    }, 1600);
-  };
-
-  const finishGame = (finalScore: number) => {
-    setIsFinished(true);
-    const timeTakenMs = Date.now() - startTime;
-    const totalQ = Math.max(1, activeSounds.length);
-    const avgLatency = Math.round(timeTakenMs / totalQ);
-    const accuracy = finalScore / totalQ;
-    const success = accuracy >= 0.75;
-
-    const updated = updateDDA(ddaState, { success, accuracy, reactionTimeMs: avgLatency });
-    setDdaState(updated);
-    storage.saveGameDDA('sounds_hills', updated);
-    setLevelResult(updated);
-
-    if (updated.leveledUp) {
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-    } else {
-      confetti({ particleCount: 50, spread: 60 });
-    }
-
-    storage.saveCognitiveSession({
-      id: `sess-${Date.now()}`,
-      gameId: 'sounds_hills',
-      domain: 'auditory_memory',
-      timestamp: new Date().toISOString(),
-      date: new Date().toISOString().split('T')[0],
-      score: Math.round(accuracy * 100),
-      maxScore: 100,
-      accuracy,
-      reactionTimeMs: avgLatency,
-      difficultyLevel: updated.level,
+  const handlePlayTune = () => {
+    setIsPlayingTune(true);
+    playFolkTune(currentSong.tuneId, () => {
+      setIsPlayingTune(false);
     });
   };
 
+  const handleReveal = () => {
+    playSound('success');
+    setIsRevealed(true);
+  };
+
+  const handleNext = () => {
+    stopFolkTune();
+    setIsPlayingTune(false);
+    if (currentIndex + 1 >= folkSongs.length) {
+      setIsSessionEnded(true);
+    } else {
+      setCurrentIndex((prev) => prev + 1);
+      setIsRevealed(false);
+    }
+  };
+
+  const handleFinishEarly = () => {
+    stopFolkTune();
+    if (onFinishSession) {
+      onFinishSession();
+    } else {
+      setIsSessionEnded(true);
+    }
+  };
+
+  const readAloudText = `${currentSong.title[language] || currentSong.title.en}. ${currentSong.description[language] || currentSong.description.en}. ${currentSong.culturalMemory[language] || currentSong.culturalMemory.en}`;
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-xs border border-amber-200">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-sm font-bold transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{t('back', language)}</span>
-        </button>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20 font-sans">
+      {/* Unified Calm Header */}
+      <CommonGameHeader
+        language={language}
+        title={t('soundsHillsTitle', language)}
+        subtitle={language === 'as' ? 'আঞ্চলিক লোকগীতৰ সুৰ আৰু স্মৃতি' : language === 'bn' ? 'আঞ্চলিক লোকসঙ্গীতের মধুর সুর ও স্মৃতি' : language === 'hi' ? 'पूर्वोत्तर के पारंपरिक लोकगीत व धुन' : 'Regional Folk Melodies & Memories'}
+        readAloudText={readAloudText}
+        onBack={() => {
+          stopFolkTune();
+          onBack();
+        }}
+        onFinishEarly={handleFinishEarly}
+      />
 
-        <div className="flex items-center gap-3 text-xs font-bold text-stone-700">
-          <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-2xl border border-emerald-200 shadow-2xs">
-            <span className="text-base">{GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🎶'}</span>
-            <span className="text-xs font-black text-emerald-800">
-              {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}
-            </span>
-          </div>
-          <span className="bg-amber-100 text-amber-900 px-3 py-1.5 rounded-xl">
-            {t('question', language)} {currentIndex + 1} / {activeSounds.length || 4}
-          </span>
-          <span className="bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-xl">
-            {t('score', language)}: {score}
-          </span>
-        </div>
-      </div>
-
-      {/* Main Card */}
-      {!isFinished ? (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-200 space-y-6 text-center">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 flex items-center justify-center gap-2">
-              <span>🎶</span>
-              <span>{t('soundsHillsTitle', language)}</span>
+      {/* Main "Name That Tune" Screen */}
+      {!isSessionEnded ? (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-[#becabf]/60 space-y-6">
+          {/* Gentle Instruction */}
+          <div className="text-center space-y-2">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] leading-relaxed">
+              {language === 'as'
+                ? 'সুৰটি শুনক আৰু গীতৰ আঁৰৰ স্মৃতি খোলক'
+                : language === 'bn'
+                ? 'সুরটি শুনুন এবং গানটির পেছনের গল্পটি জানুন'
+                : language === 'hi'
+                ? 'इस धुन को सुनें और इसके पीछे की सुंदर कहानी जानें'
+                : language === 'mni'
+                ? 'Khonjel asi taduna eshei asi kari koubano yenbiyu'
+                : 'Listen to this gentle melody and discover its beloved story'}
             </h2>
-            <div className="flex items-center justify-center gap-2 mt-1">
-              <p className="text-sm text-stone-600 font-medium">
-                {t('soundsHillsSubtitle', language)}
-              </p>
-              <button
-                onClick={() => speak(`${t('soundsHillsTitle', language)}. ${t('soundsHillsSubtitle', language)}`, language)}
-                className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer transition-colors"
-                title={t('voice.readAloud', language)}
-                aria-label={t('voice.readAloud', language)}
-              >
-                <Volume2 className="w-4 h-4 text-emerald-700" />
-              </button>
-            </div>
+            <p className="text-xs sm:text-sm text-[#3e4941] font-medium">
+              {language === 'as'
+                ? 'তলৰ বুটামটোত চুই সুৰটি শুনক। কোনো সময়সীমা নাই।'
+                : language === 'bn'
+                ? 'নিচের বোতামটিতে স্পর্শ করে সুর শুনুন। কোনো তাড়াহুড়ো নেই।'
+                : language === 'hi'
+                ? 'नीचे दिए गए बटन को छूकर धुन सुनें। समय की कोई सीमा नहीं है।'
+                : 'Tap below to listen at your own relaxed pace.'}
+            </p>
           </div>
 
-          {/* Sound Trigger Button */}
-          <div className="py-6">
+          {/* Big Tactile "Listen to Melody" Button */}
+          <div className="text-center py-2">
             <button
-              onClick={handlePlaySound}
-              className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full mx-auto flex flex-col items-center justify-center gap-2 cursor-pointer shadow-2xl transition-all active:scale-95 border-4 ${
-                isPlayingAudio
-                  ? 'bg-emerald-500 border-amber-300 text-white animate-voice-pulse'
-                  : 'bg-emerald-700 hover:bg-emerald-800 border-emerald-500 text-white'
+              onClick={handlePlayTune}
+              className={`w-full sm:w-auto px-8 py-5 rounded-3xl font-serif font-bold text-lg sm:text-xl shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-3 border-2 ${
+                isPlayingTune
+                  ? 'bg-[#bfebba] text-[#032517] border-[#416740] ring-4 ring-[#416740]/20'
+                  : 'bg-[#032517] hover:bg-[#1b3b2b] text-white border-[#032517]'
               }`}
             >
-              <Volume2 className={`w-14 h-14 sm:w-16 sm:h-16 ${isPlayingAudio ? 'animate-bounce' : ''}`} />
-              <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
-                {isPlayingAudio ? t('soundPlaying', language) : t('listenSound', language)}
-              </span>
+              <Music className={`w-6 h-6 ${isPlayingTune ? 'animate-pulse text-[#416740]' : 'text-white'}`} />
+              <span>{isPlayingTune ? (language === 'as' ? 'সুৰ বাজি আছে... 🎵' : language === 'bn' ? 'সুর বাজছে... 🎵' : language === 'hi' ? 'धुन बज रही है... 🎵' : 'Playing Melody... 🎵') : t('listenTune', language)}</span>
             </button>
-            <p className="text-xs text-stone-400 mt-3 font-semibold">
-              {t('touchToPlaySound', language)}
-            </p>
           </div>
 
-          {/* Picture Choices */}
-          <div className="space-y-3 pt-2">
-            <p className="text-xs font-black text-stone-700 uppercase tracking-wider text-left">
-              {t('whichSoundMadeThis', language)}:
-            </p>
-            <div className={`grid gap-3 ${options.length === 2 ? 'grid-cols-2' : options.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
-              {options.map((card) => {
-                const isChosen = selectedId === card.id;
-                let btnClass = 'bg-stone-50 hover:bg-amber-50 border-stone-200 text-stone-800';
-
-                if (selectedId) {
-                  if (card.id === currentSound.id) {
-                    btnClass = 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-400';
-                  } else if (isChosen) {
-                    btnClass = 'bg-rose-50 border-rose-500 text-rose-900 ring-2 ring-rose-400';
-                  }
-                }
-
-                return (
-                  <button
-                    key={card.id}
-                    disabled={selectedId !== null}
-                    onClick={() => handleSelectOption(card)}
-                    className={`p-5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${btnClass}`}
-                  >
-                    <span className="text-5xl">{card.icon}</span>
-                    <span className="text-sm font-extrabold line-clamp-1">
-                      {card.title[language] || card.title.en}
-                    </span>
-                    {selectedId && card.id === currentSound.id && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-1" />
-                    )}
-                    {selectedId && isChosen && card.id !== currentSound.id && (
-                      <XCircle className="w-5 h-5 text-rose-600 mt-1" />
-                    )}
-                  </button>
-                );
-              })}
+          {/* Reveal Song Button (Zero Wrong-Answer State, pure delight) */}
+          {!isRevealed ? (
+            <div className="text-center pt-2">
+              <button
+                onClick={handleReveal}
+                className="w-full sm:w-auto px-7 py-4 bg-[#f7faf5] hover:bg-[#ecefea] text-[#032517] font-extrabold rounded-2xl text-base border-2 border-[#becabf]/70 cursor-pointer shadow-xs transition-transform active:scale-[0.98] inline-flex items-center justify-center gap-2"
+              >
+                <span>{t('revealSong', language)}</span>
+              </button>
             </div>
-          </div>
-        </div>
-      ) : (
-        /* Completion Screen */
-        <div className="bg-white rounded-3xl p-8 shadow-xl border border-stone-200 text-center space-y-5 animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center text-3xl">
-            <Trophy className="w-8 h-8 text-emerald-600" />
-          </div>
-          <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
-            {t('soundsWonTitle', language)}
-          </h3>
-          <p className="text-stone-600 text-sm">
-            {t('soundsWonSubtitle', language)}
-          </p>
+          ) : (
+            /* Revealed Song Card & Reminiscence Story */
+            <div className="space-y-5 animate-in fade-in duration-600">
+              {/* Regional Cultural Image */}
+              <div className="relative mx-auto max-w-md h-56 sm:h-64 rounded-3xl overflow-hidden shadow-lg border-3 border-[#becabf]/60 bg-[#f7faf5]">
+                <img
+                  src={currentSong.imageUrl}
+                  alt={currentSong.title[language] || currentSong.title.en}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-xs text-[#032517] text-xs font-bold px-3 py-1 rounded-full border border-[#becabf]/60">
+                  📍 {currentSong.region[language] || currentSong.region.en}
+                </div>
+              </div>
 
-          {/* Level Adaptive Feedback */}
-          {levelResult && (
-            <div className={`mt-4 mx-auto max-w-md p-3.5 rounded-2xl flex items-center justify-center gap-2.5 font-black text-sm shadow-md ${
-              levelResult.leveledUp
-                ? 'bg-amber-400 text-stone-950 animate-bounce'
-                : 'bg-emerald-50 text-emerald-950 border border-emerald-200'
-            }`}>
-              <span className="text-xl">
-                {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🎶'}
-              </span>
-              <span>
-                {levelResult.feedbackMessage?.[language] ||
-                  `${GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}`}
-              </span>
+              {/* Story & Cultural Memory */}
+              <div className="p-5 rounded-3xl bg-[#bfebba]/25 border-2 border-[#416740]/30 space-y-2">
+                <div className="text-lg sm:text-xl font-serif font-bold text-[#032517]">
+                  🌸 {currentSong.title[language] || currentSong.title.en}
+                </div>
+                <p className="text-xs sm:text-sm text-[#3e4941] font-medium leading-relaxed">
+                  {currentSong.description[language] || currentSong.description.en}
+                </p>
+                <div className="pt-2 border-t border-[#416740]/20 flex items-start gap-2 text-xs sm:text-sm text-[#032517]">
+                  <Heart className="w-4 h-4 text-[#416740] shrink-0 mt-0.5" />
+                  <p className="italic">
+                    "{currentSong.culturalMemory[language] || currentSong.culturalMemory.en}"
+                  </p>
+                </div>
+              </div>
+
+              {/* Next Song Button */}
+              <div className="text-center pt-2">
+                <button
+                  onClick={handleNext}
+                  className="px-8 py-4 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-base shadow-md transition-transform active:scale-[0.98] cursor-pointer inline-flex items-center gap-2"
+                >
+                  <span>{t('exploreAnotherSong', language)}</span>
+                  <span>➔</span>
+                </button>
+              </div>
             </div>
           )}
+        </div>
+      ) : (
+        /* Neutral, Positive Finish Screen (NO SCORES) */
+        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-md border-2 border-[#becabf]/60 text-center space-y-5 animate-in fade-in duration-500 font-sans">
+          <div className="w-16 h-16 rounded-full bg-[#bfebba]/50 text-[#032517] mx-auto flex items-center justify-center text-3xl shadow-xs">
+            🎶
+          </div>
 
-          <div className="flex justify-center gap-3 pt-4">
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#032517]">
+              {t('sessionCompleteMessage', language)}
+            </h2>
+            <p className="text-sm text-[#3e4941] font-medium max-w-md mx-auto leading-relaxed">
+              {language === 'as'
+                ? 'আজিৰ সকলো লোকগীত আৰু সুৰৰ সোণালী স্মৃতি শুনা হ’ল। মন শান্ত হৈ থাকক।'
+                : language === 'bn'
+                ? 'আজকের সকল লোকসঙ্গীতের মধুর স্মৃতি আমরা একসাথে শুনলাম। মন শান্ত থাকুক।'
+                : language === 'hi'
+                ? 'आज के सभी लोकगीत और उनकी यादें हमने साथ मिलकर सुनीं। मन शांत व प्रसन्न रहे।'
+                : 'All folk melodies and cherished memories were enjoyed peacefully together.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
             <button
-              onClick={() => initRound(ddaState.level)}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-md cursor-pointer transition-transform active:scale-95"
+              onClick={() => {
+                if (onFinishSession) {
+                  onFinishSession();
+                } else {
+                  onBack();
+                }
+              }}
+              className="py-3.5 px-6 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-sm shadow-md transition-transform active:scale-[0.98] cursor-pointer"
             >
-              {t('playAgain', language)}
+              {language === 'as' ? 'সত্ৰৰ সাৰাংশ চাওক' : language === 'bn' ? 'সেশনের সারাংশ দেখুন' : language === 'hi' ? 'सत्र सारांश देखें' : 'View Session Summary'}
             </button>
             <button
-              onClick={onBack}
-              className="px-6 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-extrabold rounded-2xl text-sm cursor-pointer"
+              onClick={() => {
+                setCurrentIndex(0);
+                setIsRevealed(false);
+                setIsSessionEnded(false);
+              }}
+              className="py-3.5 px-6 bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] font-extrabold rounded-2xl text-sm border border-[#becabf]/60 cursor-pointer"
             >
-              {t('home', language)}
+              {t('exploreAnotherSong', language)}
             </button>
           </div>
         </div>
       )}
+
+      {/* 10-15 Min Gentle Session Ending Cap */}
+      <SessionEndingModal
+        isOpen={isTimeCapModalOpen}
+        language={language}
+        onFinish={() => {
+          setIsTimeCapModalOpen(false);
+          handleFinishEarly();
+        }}
+        onContinue={() => setIsTimeCapModalOpen(false)}
+      />
     </div>
   );
 };

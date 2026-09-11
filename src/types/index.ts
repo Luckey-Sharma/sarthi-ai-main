@@ -69,6 +69,9 @@ export interface FamilyMember {
   memoryHint: string;
   favoriteMemory: string;
   hometown: string;
+  relationship?: string;
+  location?: string;
+  avatar?: string;
 }
 
 export interface Medication {
@@ -105,6 +108,7 @@ export interface DDAState {
 export interface CVIScorecard {
   overallScore: number; // 0 - 100
   trend: 'improving' | 'stable' | 'declining';
+  direction?: 'Improving' | 'Stable' | 'Declining' | string;
   riskTier: 'Low' | 'Moderate' | 'High';
   domainScores: Record<CognitiveDomain, number>;
   lastUpdated: string;

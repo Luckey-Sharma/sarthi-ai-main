@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Language, GameId } from '../../types';
-import { ArrowLeft, Sparkles, Brain, Eye, Activity, Music, Calendar, Users, Cpu, Award, Zap } from 'lucide-react';
+import { ArrowLeft, Sparkles, Heart } from 'lucide-react';
 import { t } from '../../services/i18n';
-import { storage } from '../../services/storage';
-import { GAME_LEVELS } from '../../services/aiEngine';
 
 interface GamesHubProps {
   language: Language;
   onSelectGame: (gameId: GameId) => void;
+  onStartCaregiverSession?: () => void;
   onBack: () => void;
 }
 
@@ -16,7 +15,6 @@ interface GameDefinition {
   title: Record<Language, string>;
   domainLabel: Record<Language, string>;
   icon: string;
-  iconBg: string;
   badge: Record<Language, string>;
   description: Record<Language, string>;
 }
@@ -25,232 +23,225 @@ const GAMES: GameDefinition[] = [
   {
     id: 'memory_match',
     title: {
-      as: 'ঐতিহ্য স্মৃতি জোৰা',
-      bn: 'ঐতিহ্য স্মৃতি জোড়া',
-      mni: 'Cultural Memory Match',
-      hi: 'सांस्कृतिक स्मृति मिलान',
-      en: 'Cultural Memory Match',
+      as: 'ঐতিহ্য ফটো আৰু সঁজুলিৰ চিনাকি',
+      bn: 'ঐতিহ্যবাহী ছবি ও স্মারক মেলানো',
+      mni: 'Cultural Photo Match',
+      hi: 'सांस्कृतिक स्मृति व वस्तु मिलान',
+      en: 'Heritage Artifacts & Keepsakes',
     },
     domainLabel: {
-      as: 'দৃষ্টি আৰু স্থানিক স্মৃতি',
-      bn: 'ভিজ্যুয়াল মেমোরি',
-      mni: 'Visual & Spatial Memory',
-      hi: 'दृष्टि एवं स्थानिक स्मृति',
-      en: 'Visual & Spatial Memory',
+      as: 'দৃষ্টি আৰু পৰিচিত স্মৃতি',
+      bn: 'ভিজ্যুয়াল স্মৃতি ও চেনা জিনিস',
+      mni: 'Visual & Familiar Memory',
+      hi: 'दृष्टि एवं परिचित यादें',
+      en: 'Visual & Familiar Memory',
     },
     icon: '🎴',
-    iconBg: 'bg-emerald-100 text-emerald-800',
     badge: {
-      en: 'Flip Cards',
-      hi: 'कार्ड मिलान',
-      as: 'কাৰ্ড ওলোটোৱা',
-      bn: 'কার্ড উল্টানো',
-      mni: 'Card Leithokpa',
+      en: 'Familiar Artifacts',
+      hi: 'परिचित धरोहर',
+      as: 'পৰিচিত সঁজুলি',
+      bn: 'চেনা জিনিস',
+      mni: 'Familiar Pots',
     },
     description: {
-      as: 'জাপি, শৰাই আৰু মুগা ৰেচমৰ জোৰা মিলাওক।',
-      bn: 'জাপি, শরাই ও ঐতিহ্যবাহী আসামের প্রতীক মেলান।',
-      mni: 'Cultural potlam anigi match sing thidok-u.',
-      hi: 'पारंपरिक जापी, शराई व धरोहरों के जोड़े मिलाएं।',
-      en: 'Match pairs of North-East cultural artifacts and family treasures.',
-    },
-  },
-  {
-    id: 'tea_garden',
-    title: {
-      as: 'চাহ বাগিচাৰ মনোযোগ',
-      bn: 'চা বাগিচার মনোযোগ',
-      mni: 'Cha Bagan Focus',
-      hi: 'चाय बगान ध्यान व फुर्ती',
-      en: 'Tea Garden Focus',
-    },
-    domainLabel: {
-      as: 'মনোযোগ আৰু মটৰ প্ৰতিক্ৰিয়া',
-      bn: 'মনোযোগ ও রিফ্লেক্স',
-      mni: 'Pukning Changba & Reflex',
-      hi: 'एकाग्रता एवं प्रतिक्रिया',
-      en: 'Attention & Motor Reflex',
-    },
-    icon: '🍃',
-    iconBg: 'bg-teal-100 text-teal-800',
-    badge: {
-      en: 'Real-time Tap',
-      hi: 'फुर्ती व ध्यान',
-      as: 'সজাগ দৃষ্টি',
-      bn: 'সজাগ দৃষ্টি',
-      mni: 'Focus Tap',
-    },
-    description: {
-      as: 'দুটি পাত এটি কলি সময়মতে চিঙক।',
-      bn: 'সঠিক সময়ে দুটি পাতা একটি কুঁড়ি তুলুন।',
-      mni: 'Mana ani koli ama matam chana loukhat-u.',
-      hi: 'हरी-भरी चाय की कोमल पत्तियों को सही समय पर चुनें।',
-      en: 'Pluck tender tea buds in lush green garden patches before they mature.',
-    },
-  },
-  {
-    id: 'brain_quest',
-    title: {
-      as: 'পাহাৰীয়া সাঁথৰ',
-      bn: 'পাহাড়ী ধাঁধা',
-      mni: 'Chinggi Paheli',
-      hi: 'पहाड़ी पहेलियां',
-      en: 'Hill Riddles (Brain Quest)',
-    },
-    domainLabel: {
-      as: 'যুক্তিবোধ আৰু নিৰ্ণয়',
-      bn: 'যুক্তিবোধ ও সিদ্ধান্ত',
-      mni: 'Executive Function & Logic',
-      hi: 'तार्किक चिंतन व समझ',
-      en: 'Executive Function & Logic',
-    },
-    icon: '🧩',
-    iconBg: 'bg-amber-100 text-amber-800',
-    badge: {
-      en: 'Folk Riddles',
-      hi: 'लोक पहेलियां',
-      as: 'লোক সাঁথৰ',
-      bn: 'লোক ধাঁধা',
-      mni: 'Folk Paheli',
-    },
-    description: {
-      as: 'ব্ৰহ্মপুত্ৰ আৰু কাজিৰঙাৰ সাঁথৰ ভাঙক।',
-      bn: 'উত্তর-পূর্ব ভারতের ঐতিহ্যবাহী ধাঁধার উত্তর দিন।',
-      mni: 'Folk Paheli gi paokhum thidok-u.',
-      hi: 'पूर्वोत्तर की लोककथाओं से जुड़ी पहेलियां बूझें।',
-      en: 'Solve culturally grounded folk riddles testing executive function.',
-    },
-  },
-  {
-    id: 'pattern_weave',
-    title: {
-      as: 'তাঁতশালৰ ফুল',
-      bn: 'তাঁতের নকশা',
-      mni: 'Yongkham Khwanglyet Weave',
-      hi: 'हथकरघा बुनाई पैटर्न',
-      en: 'Handloom Pattern Weave',
-    },
-    domainLabel: {
-      as: 'বিন্যাস আৰু ধাৰা',
-      bn: 'প্যাটার্ন ও ধারা',
-      mni: 'Pattern & Logic',
-      hi: 'पैटर्न एवं तार्किक क्रम',
-      en: 'Pattern & Inductive Logic',
-    },
-    icon: '🧶',
-    iconBg: 'bg-indigo-100 text-indigo-800',
-    badge: {
-      en: 'Pattern Logic',
-      hi: 'हथकरघा बुनाई',
-      as: 'তাঁত চানেকি',
-      bn: 'তাঁতের নকশা',
-      mni: 'Yongkham',
-    },
-    description: {
-      as: 'অসমীয়া কাপোৰৰ পৰম্পৰাগত ফুল বাচক।',
-      bn: 'ঐতিহ্যবাহী তাঁতের কাপড়ে সঠিক নকশার ফুল মেলান।',
-      mni: 'Traditional motif sequence asi weavetou.',
-      hi: 'पारंपरिक हथकरघे के ताने-बाने में सही रूपांकन बुनें।',
-      en: 'Discover and place the correct next motif in indigenous weave motifs.',
-    },
-  },
-  {
-    id: 'routine_builder',
-    title: {
-      as: 'দৈনন্দিন নিয়ম সংস্থাপন',
-      bn: 'দৈনন্দিন রুটিন সাজানো',
-      mni: 'Nungtigi Routine Semba',
-      hi: 'दैनिक दिनचर्या संजोना',
-      en: 'Daily Routine Builder',
-    },
-    domainLabel: {
-      as: 'সময় আৰু ক্ৰম অনুধাৱন',
-      bn: 'সময় ও অনুক্রম',
-      mni: 'Matam Khangba',
-      hi: 'समय एवं दिनचर्या क्रम',
-      en: 'Temporal Orientation & Sequencing',
-    },
-    icon: '☀️',
-    iconBg: 'bg-orange-100 text-orange-800',
-    badge: {
-      en: 'Sequencing',
-      hi: 'दिनचर्या क्रम',
-      as: 'দৈনন্দিন ক্ৰম',
-      bn: 'রুটিন ক্রম',
-      mni: 'Routine',
-    },
-    description: {
-      as: 'পুৱাৰ চাহৰ পৰা সন্ধিয়ালৈ কামবোৰ ক্ৰমত সজাওক।',
-      bn: 'সকাল থেকে রাতের প্রাত্যহিক কাজ ধারাবাহিকভাবে সাজান।',
-      mni: 'Numit pumbagi thabak pareng saba.',
-      hi: 'सुबह की चाय से शाम की पूजा तक दिनचर्या को सही क्रम में रखें।',
-      en: 'Chronologically order daily rituals to anchor circadian temporal sense.',
+      as: 'জাপি, শৰাই, গামোচা আৰু বৰপেটাৰ কাঁহৰ প্ৰকৃত ফটো চাই চিনাকি লাভ কৰক।',
+      bn: 'জাপি, শরাই ও পরিচিত জিনিসপত্রের সুন্দর ছবি দেখে মেলানোর আনন্দদায়ক স্মৃতি।',
+      mni: 'Jaapi, Xorai amsung potlamsinggi photo match toubiyu.',
+      hi: 'जापी, शराई व गमोसा जैसी जानी-पहचानी वस्तुओं की खूबसूरत तस्वीरें पहचानें।',
+      en: 'Recognize authentic heritage treasures like the Jaapi, Xorai, and Gamosa. Zero pressure or hidden card stress.',
     },
   },
   {
     id: 'sounds_hills',
     title: {
-      as: 'পাহাৰৰ সুৰ',
-      bn: 'পাহাড়ের সুর',
-      mni: 'Chinggi Makhon',
-      hi: 'पहाड़ों की धुन व आवाजें',
-      en: 'Sounds of the Hills',
+      as: 'সুৰ চিনক: আঞ্চলিক লোকগীতৰ সুৰ',
+      bn: 'সুর চেনা: আঞ্চলিক লোকসঙ্গীত ও সুর',
+      mni: 'Name That Tune: Folk Melodies',
+      hi: 'धुन पहचानें: पूर्वोत्तर के लोकगीत',
+      en: 'Name That Tune: Regional Folk Melodies',
     },
     domainLabel: {
-      as: 'শ্ৰৱণ স্মৃতি আৰু চিনাক্তকৰণ',
-      bn: 'শ্রবণ স্মৃতি',
-      mni: 'Taduna Ningsingba',
-      hi: 'श्रवण स्मृति व पहचान',
-      en: 'Auditory Memory',
+      as: 'শ্ৰৱণ স্মৃতি আৰু সংগীতিক নস্টালজিয়া',
+      bn: 'শ্রবণ স্মৃতি ও সুরের নস্টালজিয়া',
+      mni: 'Auditory & Folk Music',
+      hi: 'श्रवण स्मृति व लोक संगीत',
+      en: 'Auditory Memory & Folk Music',
     },
     icon: '🎶',
-    iconBg: 'bg-purple-100 text-purple-800',
     badge: {
-      en: 'Audio Synth',
-      hi: 'ध्वनि पहचान',
-      as: 'সুৰ চিনাক্তকৰণ',
-      bn: 'সুর চেনা',
-      mni: 'Makhon Taba',
+      en: 'Folk Tunes',
+      hi: 'पारंपरिक धुनें',
+      as: 'লোকগীতৰ সুৰ',
+      bn: 'লোকসঙ্গীত',
+      mni: 'Folk Tune',
     },
     description: {
-      as: 'পেঁপা, মন্দিৰৰ ঘণ্টা আৰু বৰষুণৰ শব্দ শুনি চিনি পাওক।',
-      bn: 'পেঁপা, মন্দির ঘণ্টা ও চেরাপুঞ্জির বৃষ্টির শব্দ শুনুন।',
-      mni: 'Pepa amasung nong khonjel taba.',
-      hi: 'पेपा, मंदिर की घंटी और चेरापूंजी की बारिश सुनकर पहचानें।',
-      en: 'Match procedural indigenous sounds to their traditional visual counterparts.',
+      as: 'বিহু সুৰ, বাউল গান, মণিপুৰী পেনা আৰু পাহাৰীয়া বাঁহীৰ সুমধুৰ সুৰ শুনি আনন্দ লওক।',
+      bn: 'বিহু সুর, বাউল গান, মণিপুরী পেনা ও বাঁশির শান্ত সুরে হারিয়ে যান।',
+      mni: 'Bihu, Baul, Pena amsung chinggi flute makhon.',
+      hi: 'बिहू, बाउल, मणिपुरी पेना और बांसुरी की मधुर धुनों को सुनकर यादें ताज़ा करें।',
+      en: 'Listen to soothing procedural folk melodies like Bihu, Baul, and hill flutes, with gentle tap-to-reveal stories.',
+    },
+  },
+  {
+    id: 'brain_quest',
+    title: {
+      as: 'পৰিচিত ঠাই আৰু ঐতিহ্যৰ সাধু',
+      bn: 'পরিচিত স্থান ও ঐতিহ্যের গল্প',
+      mni: 'Familiar Places & Heritage Stories',
+      hi: 'जानी-पहचानी जगहें व लोक कथाएं',
+      en: 'Familiar Places & Heritage Stories',
+    },
+    domainLabel: {
+      as: 'ভৌগোলিক আৰু সাংস্কৃতিক স্মৃতি',
+      bn: 'স্থান ও সাংস্কৃতিক স্মৃতি',
+      mni: 'Geographic & Cultural Memory',
+      hi: 'सांस्कृतिक व ऐतिहासिक स्मृति',
+      en: 'Geographic & Cultural Memory',
+    },
+    icon: '🏛️',
+    badge: {
+      en: 'Sacred Lands',
+      hi: 'तीर्थ व धरोहर',
+      as: 'ঐতিহাসিক স্থান',
+      bn: 'ঐতিহাসিক স্থান',
+      mni: 'Heritage Place',
+    },
+    description: {
+      as: 'কাজিৰঙা, মাজুলী সত্ৰ, কামাখ্যা পাহাৰ আৰু লোকটাক হ্ৰদৰ প্ৰকৃত ছবি আৰু কথা।',
+      bn: 'কাজিবাঙা, মাজুলী, কামাখ্যা পাহাড় ও লোকটাক হ্রদের স্মৃতি ও পবিত্র গল্প।',
+      mni: 'Kaziranga, Majuli, Loktak gi photo amsung wari.',
+      hi: 'काजीरंगा, माजुली, कामाख्या और लोकटक झील की मनमोहक तस्वीरें व कहानियां।',
+      en: 'Explore famous landmarks of Assam, Meghalaya, and Manipur with gentle reminiscing cues.',
+    },
+  },
+  {
+    id: 'pattern_weave',
+    title: {
+      as: 'পৰম্পৰাগত সাজ-পোছাক আৰু তাঁতশিল্প',
+      bn: 'ঐতিহ্যবাহী পোশাক ও তাঁতের সাজ',
+      mni: 'Traditional Attire & Handlooms',
+      hi: 'पारंपरिक वस्त्र व हथकरघा धरोहर',
+      en: 'Traditional Attire & Handlooms',
+    },
+    domainLabel: {
+      as: 'দৃশ্যমান চিনাক্তকৰণ আৰু হস্তশিল্প',
+      bn: 'পোশাক ও তাঁতশিল্পের স্মৃতি',
+      mni: 'Handloom & Attire Memory',
+      hi: 'हथकरघा व पोशाक स्मृति',
+      en: 'Visual Texture & Attire Recognition',
+    },
+    icon: '🧶',
+    badge: {
+      en: 'Handlooms',
+      hi: 'हथकरघा',
+      as: 'তাঁতশিল্প',
+      bn: 'তাঁতের নকশা',
+      mni: 'Yongkham',
+    },
+    description: {
+      as: 'সোণালী মুগা ৰেচম, নাগা চাদৰ, মণিপুৰী ফানেক আৰু ৰঙা গামোচাৰ চিনাকি।',
+      bn: 'সোনালী মুগা রেশম, নাগা শাল, মণিপুরী ফানেক ও গামোছার স্মৃতিময় রূপ।',
+      mni: 'Muga silk, Naga shawl, Phanek amsung Gamosa.',
+      hi: 'सुनहरी मूगा सिल्क, नागा शॉल, मणिपुरी फनेक व गमोसा के परिचित स्वरूप।',
+      en: 'Reminisce about the warmth of golden Muga silk, handwoven Naga shawls, and festival attire.',
+    },
+  },
+  {
+    id: 'tea_garden',
+    title: {
+      as: 'চাহ বাগিচাৰ শান্ত খোজ',
+      bn: 'চা বাগানে শান্ত হাঁটা',
+      mni: 'Peaceful Tea Garden Walk',
+      hi: 'चाय बागान में शांत सैर',
+      en: 'Peaceful Tea Garden Walk',
+    },
+    domainLabel: {
+      as: 'মনোযোগ আৰু ইন্দ্ৰিয় স্নিগ্ধতা',
+      bn: 'ইন্দ্রিয় শিথিলতা ও স্নিগ্ধতা',
+      mni: 'Sensory Calm & Nature',
+      hi: 'इंद्रिय शांति व प्रकृति स्पर्श',
+      en: 'Sensory Calm & Nature Connection',
+    },
+    icon: '🍃',
+    badge: {
+      en: 'Sensory Walk',
+      hi: 'शांत सैर',
+      as: 'শান্ত খোজ',
+      bn: 'শান্ত হাঁটা',
+      mni: 'Sensory Walk',
+    },
+    description: {
+      as: 'সেউজীয়া বাগিচাত ফুৰক আৰু দুটি পাত এটি কলি সাবধানে সাঁচক — কোনো সময়ৰ চাপ নাই।',
+      bn: 'চা বাগানের সবুজ স্নিগ্ধতায় নিজের শান্ত গতিতে দুটি পাতা একটি কুঁড়ি তুলুন।',
+      mni: 'Cha bagan da tapna chatpada mana loukhat-u.',
+      hi: 'हरी-भरी वादियों में शांत सैर करें और बांस की टोकरी में कोमल पत्तियां संजोएं।',
+      en: 'A tranquil stroll through lush tea bushes. Pluck fresh sprigs into a bamboo basket at your own pace.',
+    },
+  },
+  {
+    id: 'routine_builder',
+    title: {
+      as: 'মৃদু দৈনন্দিন মুহূৰ্ত',
+      bn: 'শান্ত প্রাত্যহিক মুহূর্ত',
+      mni: 'Gentle Daily Moments',
+      hi: 'सहज दैनिक पल व दिनचर्या',
+      en: 'Gentle Daily Moments',
+    },
+    domainLabel: {
+      as: 'দৈনিক জীৱন আৰু আশ্বস্ততা',
+      bn: 'দৈনন্দিন স্বাচ্ছন্দ্য ও স্মৃতি',
+      mni: 'Daily Living & Comfort',
+      hi: 'दैनिक सहजता व अपनत्व',
+      en: 'Circadian Comfort & Daily Living',
+    },
+    icon: '☀️',
+    badge: {
+      en: 'Daily Comfort',
+      hi: 'दैनिक सहजता',
+      as: 'দৈনিক শান্তি',
+      bn: 'দৈনিক মুহূর্ত',
+      mni: 'Daily Routine',
+    },
+    description: {
+      as: 'পুৱাৰ গৰম চাহৰ সুগন্ধি, তুলসীৰ তলত চাকি আৰু সন্ধিয়াৰ শান্তি মনত পেলাওক।',
+      bn: 'সকালের গরম চা, তুলসী তলায় প্রদীপ ও সন্ধ্যার শান্ত আবেশের মধুর স্মৃতি।',
+      mni: 'Ayangba cha thakpa, sandhyada thambal thanba.',
+      hi: 'सुबह की गर्मागर्म चाय, तुलसी के पास दिया और शाम की शांति के सुखद पल।',
+      en: 'Anchor each part of the day with peaceful daily rituals: morning tea, tending plants, and evening lamps.',
     },
   },
   {
     id: 'family_recall',
     title: {
-      as: 'আপোন মানুহক চিনক',
-      bn: 'চিহ্ন আপনজন',
-      mni: 'Imunggi Meeyam Khangba',
-      hi: 'पहचानें अपने प्रियजन',
-      en: 'Family Face Recall',
+      as: 'পৰিয়ালৰ এলবাম আৰু আপোন স্মৃতি',
+      bn: 'পারিবারিক অ্যালবাম ও মধুর স্মৃতি',
+      mni: 'Family Album & Memories',
+      hi: 'पारिवारिक एल्बम व आत्मीय यादें',
+      en: 'Family Album & Cherished Memories',
     },
     domainLabel: {
-      as: 'আত্মজীৱনীমূলক স্মৃতি',
-      bn: 'আত্মজীবনী স্মৃতি',
-      mni: 'Imunggi Ningsingba',
-      hi: 'पारिवारिक आत्मीय स्मृति',
-      en: 'Autobiographical Memory',
+      as: 'আত্মজীৱনীমূলক স্মৃতি আৰু স্নেহ',
+      bn: 'আত্মজীবনী স্মৃতি ও পারিবারিক টান',
+      mni: 'Autobiographical Love',
+      hi: 'पारिवारिक आत्मीय स्नेह',
+      en: 'Autobiographical Love & Kinship',
     },
     icon: '❤️',
-    iconBg: 'bg-rose-100 text-rose-800',
     badge: {
-      en: 'Warm Reminiscence',
-      hi: 'पारिवारिक स्नेह',
-      as: 'পৰিয়ালৰ স্নেহ',
-      bn: 'পারিবারিক টান',
+      en: 'Loving Family',
+      hi: 'प्रियजन',
+      as: 'মৰমৰ পৰিয়াল',
+      bn: 'প্রিয়জন',
       mni: 'Imunggi Nungshiba',
     },
     description: {
-      as: 'ফটো আৰু মৰমৰ সংকেত চাই পৰিয়ালৰ মানুহক চিনি পাওক।',
-      bn: 'ছবি দেখে নিজের সন্তান ও প্রিয়জনদের স্মৃতিতে ধরে রাখুন।',
-      mni: 'Imunggi nungshiba mi sak khangba.',
-      hi: 'तस्वीरों व प्यार भरे संकेतों से अपने परिवारजनों को पहचानें।',
-      en: 'Spark joyful reminiscence through photos and clues of children and loved ones.',
+      as: 'আপোন সন্তান আৰু পৰিয়ালৰ মানুহৰ মৰমৰ ফটো আৰু স্মৃতিৰে হৃদয় জুৰাওক।',
+      bn: 'সন্তান ও পরিবারের সদস্যদের মিষ্টি ছবি এবং স্মৃতিতে অপার আনন্দ লাভ করুন।',
+      mni: 'Imunggi nungshiba mi sak photo yengba.',
+      hi: 'बच्चों व परिवारजनों की प्यारी तस्वीरें और आत्मीय यादें दिल को सुकून देती हैं।',
+      en: 'Spark comforting, heartfelt memories through family portraits and loving personal anecdotes.',
     },
   },
 ];
@@ -258,9 +249,9 @@ const GAMES: GameDefinition[] = [
 export const GamesHub: React.FC<GamesHubProps> = ({
   language,
   onSelectGame,
+  onStartCaregiverSession,
   onBack,
 }) => {
-  const [gameLevels] = useState<Record<GameId, number>>(() => storage.getAllGameLevels());
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const categories = [
@@ -268,144 +259,153 @@ export const GamesHub: React.FC<GamesHubProps> = ({
       id: 'all',
       label: {
         en: 'All Activities',
-        as: 'সকলো খেল',
-        bn: 'সব খেলা',
+        as: 'সকলো কাৰ্যকলাপ',
+        bn: 'সব কার্যকলাপ',
         hi: 'सभी गतिविधियाँ',
         mni: 'Pumba',
       }[language] || 'All Activities',
     },
     {
-      id: 'memory',
+      id: 'heritage',
       label: {
-        en: 'Visual Memory',
-        as: 'দৃষ্টি স্মৃতি',
-        bn: 'ভিজ্যুয়াল স্মৃতি',
-        hi: 'दृश्य स्मृति',
-        mni: 'Visual Memory',
-      }[language] || 'Visual Memory',
+        en: 'Heritage & Attire',
+        as: 'ঐতিহ্য আৰু সাজ',
+        bn: 'ঐতিহ্য ও পোশাক',
+        hi: 'धरोहर व वेशभूषा',
+        mni: 'Heritage',
+      }[language] || 'Heritage & Attire',
     },
     {
-      id: 'focus',
+      id: 'music',
       label: {
-        en: 'Focus & Attention',
-        as: 'মনোযোগ',
-        bn: 'মনোযোগ ও গতি',
-        hi: 'एकाग्रता',
-        mni: 'Pukning Changba',
-      }[language] || 'Focus & Attention',
+        en: 'Music & Melodies',
+        as: 'সংগীত আৰু সুৰ',
+        bn: 'সঙ্গীত ও সুর',
+        hi: 'संगीत व धुनें',
+        mni: 'Folk Music',
+      }[language] || 'Music & Melodies',
     },
     {
-      id: 'riddles',
+      id: 'places',
       label: {
-        en: 'Executive Logic',
-        as: 'যুক্তিবোধ',
-        bn: 'যুক্তিবোধ',
-        hi: 'तार्किक समझ',
-        mni: 'Logic',
-      }[language] || 'Executive Logic',
-    },
-    {
-      id: 'routine',
-      label: {
-        en: 'Routine & Time',
-        as: 'দৈনন্দিন ক্ৰম',
-        bn: 'রুটিন ও সময়',
-        hi: 'दिनचर्या क्रम',
-        mni: 'Routine',
-      }[language] || 'Routine & Time',
-    },
-    {
-      id: 'sounds',
-      label: {
-        en: 'Auditory Recall',
-        as: 'শ্ৰৱণ সুৰ',
-        bn: 'শ্রবণ সুর',
-        hi: 'ध्वनि पहचान',
-        mni: 'Makhon',
-      }[language] || 'Auditory Recall',
+        en: 'Places & Nature',
+        as: 'ঠাই আৰু প্ৰকৃতি',
+        bn: 'স্থান ও প্রকৃতি',
+        hi: 'प्रकृति व स्थान',
+        mni: 'Nature & Places',
+      }[language] || 'Places & Nature',
     },
     {
       id: 'family',
       label: {
-        en: 'Family & Culture',
-        as: 'পৰিয়াল আৰু ঐতিহ্য',
-        bn: 'পরিবার ও সংস্কৃতি',
-        hi: 'परिवार व स्नेह',
-        mni: 'Imung',
-      }[language] || 'Family & Culture',
+        en: 'Family & Routine',
+        as: 'পৰিয়াল আৰু দিনচৰ্যা',
+        bn: 'পরিবার ও দিনলিপি',
+        hi: 'परिवार व दिनचर्या',
+        mni: 'Family & Routine',
+      }[language] || 'Family & Routine',
     },
   ];
 
   const filteredGames = GAMES.filter((game) => {
     if (activeCategory === 'all') return true;
-    if (activeCategory === 'memory') return game.id === 'memory_match' || game.id === 'pattern_weave';
-    if (activeCategory === 'focus') return game.id === 'tea_garden';
-    if (activeCategory === 'riddles') return game.id === 'brain_quest';
-    if (activeCategory === 'routine') return game.id === 'routine_builder';
-    if (activeCategory === 'sounds') return game.id === 'sounds_hills';
-    if (activeCategory === 'family') return game.id === 'family_recall';
+    if (activeCategory === 'heritage') return game.id === 'memory_match' || game.id === 'pattern_weave';
+    if (activeCategory === 'music') return game.id === 'sounds_hills';
+    if (activeCategory === 'places') return game.id === 'brain_quest' || game.id === 'tea_garden';
+    if (activeCategory === 'family') return game.id === 'family_recall' || game.id === 'routine_builder';
     return true;
   });
-
-  const ddaPillLabel = {
-    en: 'Dynamic Adaptive Difficulty (DDA)',
-    hi: 'स्वतः अनुकूली प्रणाली (DDA)',
-    as: 'স্বতন্ত্ৰ অনুকূলন (DDA)',
-    bn: 'অভিযোজন ব্যবস্থা (DDA)',
-    mni: 'Adaptive System (DDA)',
-  }[language] || 'Dynamic Adaptive Difficulty (DDA)';
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-20 font-sans">
       {/* Top Header Strip */}
-      <div className="flex items-center justify-between bg-white p-4 sm:p-5 rounded-3xl shadow-xs border border-[#becabf]/60">
+      <div className="flex items-center justify-between bg-white/80 backdrop-blur-md p-4 sm:p-5 rounded-3xl shadow-[0_4px_20px_rgba(70,80,60,0.05)] border border-[rgba(70,80,60,0.08)]">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] rounded-2xl text-xs font-bold transition-colors cursor-pointer border border-[#becabf]/40"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#F5EBE1]/60 hover:bg-[#F5EBE1] text-[#1F342A] rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer border border-[rgba(70,80,60,0.08)]"
         >
-          <ArrowLeft className="w-4 h-4 text-[#416740]" />
+          <ArrowLeft className="w-4 h-4 text-[#708A74]" />
           <span>{t('back', language)}</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-bold text-[#032517] bg-[#bfebba]/40 border border-[#83a590]/40 px-3.5 py-1.5 rounded-xl">
-          <Zap className="w-4 h-4 text-[#416740] fill-[#416740]" />
-          <span>{ddaPillLabel}</span>
-        </div>
+        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#D9E8D8] text-[#1F342A] text-xs font-bold border border-[#708A74]/30 shadow-xs">
+          <span>🌿</span>
+          <span>
+            {language === 'as'
+              ? 'শান্ত আৰু মৰমৰ স্মৃতি কাৰ্যসূচী'
+              : language === 'bn'
+              ? 'শান্ত ও মধুর স্মৃতি কার্যকলাপ'
+              : language === 'hi'
+              ? 'शांत व आत्मीय स्मृति गतिविधियां'
+              : 'Gentle Reminiscence Activities'}
+          </span>
+        </span>
       </div>
 
-      {/* Main Title & Gentle Daily Progress */}
-      <div className="bg-[#ffffff] p-6 sm:p-7 rounded-3xl border border-[#becabf]/60 shadow-md">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#032517] tracking-tight">
-              {t('gamesHubTitle', language)}
-            </h1>
-            <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-1">
-              {t('gamesHubSubtitle', language)}
+      {/* Caregiver-Guided Session Banner */}
+      {onStartCaregiverSession && (
+        <div className="bg-gradient-to-r from-[#1F342A] via-[#263F33] to-[#1F342A] p-6 sm:p-8 rounded-[28px] text-white shadow-[0_8px_30px_rgba(31,52,42,0.15)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 border border-[#708A74]/30">
+          <div className="space-y-1.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-[#FFF6D6] text-[#785E22]">
+              <Sparkles className="w-3.5 h-3.5 text-[#785E22]" />
+              <span>{t('caregiverSessionSetupTitle', language)}</span>
+            </span>
+            <h2 className="text-xl sm:text-2xl font-serif font-bold pt-1 text-white">
+              {language === 'as'
+                ? 'পৰিয়াল বা শুশ্ৰূষাকাৰীৰ সৈতে শান্ত অধিবেশন আৰম্ভ কৰক'
+                : language === 'bn'
+                ? 'পরিবার বা পরিচর্যাকারীর সাথে শান্ত সেশন শুরু করুন'
+                : language === 'hi'
+                ? 'देखभालकर्ता के साथ एक शांत आत्मीय सत्र शुरू करें'
+                : 'Start a Guided Session with a Caregiver or Loved One'}
+            </h2>
+            <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl font-normal leading-relaxed">
+              {language === 'as'
+                ? 'মনোভাব লক্ষ্য কৰক, উপযুক্ত কাৰ্যকলাপ বাচক আৰু একেলগে শান্ত সময় উপভোগ কৰক।'
+                : language === 'bn'
+                ? 'বর্তমান মানসিক অবস্থা অনুযায়ী সুন্দর কার্যকলাপ বেছে নিয়ে একসাথে সময় কাটান।'
+                : language === 'hi'
+                ? 'मनोदशा अनुसार उपयुक्त गतिविधि चुनें और बिना किसी तनाव के साथ समय बिताएं।'
+                : 'Check in on current mood, pick the best suited reminiscence activity, and spend joyful time together.'}
             </p>
           </div>
 
-          <div className="w-full md:w-64 bg-[#f7faf5] p-3.5 rounded-2xl border border-[#becabf]/60">
-            <div className="flex items-center justify-between text-xs font-bold text-[#032517] mb-1.5">
-              <span>{language === 'as' ? 'দৈনিক লক্ষ্য' : language === 'bn' ? 'দৈনিক লক্ষ্য' : language === 'hi' ? 'दैनिक लक्ष्य' : 'Daily Gentle Goal'}</span>
-              <span className="text-[#416740]">2 / 3</span>
-            </div>
-            <div className="w-full bg-[#ecefea] h-2 rounded-full overflow-hidden">
-              <div className="bg-[#032517] h-full rounded-full w-2/3 transition-all" />
-            </div>
-          </div>
+          <button
+            onClick={onStartCaregiverSession}
+            className="px-6 py-3.5 bg-[#FAF6EE] hover:bg-white text-[#1F342A] font-bold rounded-2xl text-xs sm:text-sm shadow-md transition-all transform active:scale-95 cursor-pointer shrink-0 border border-white"
+          >
+            {t('startSessionAction', language)}
+          </button>
+        </div>
+      )}
+
+      {/* Main Title Strip */}
+      <div className="bg-white/80 backdrop-blur-md p-6 sm:p-7 rounded-[28px] border border-[rgba(70,80,60,0.08)] shadow-[0_4px_20px_rgba(70,80,60,0.05)] space-y-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#1F342A] tracking-tight">
+            {t('gamesHubTitle', language)}
+          </h1>
+          <p className="text-xs sm:text-sm text-[#495E4F] font-medium mt-1">
+            {language === 'as'
+              ? 'সকলো খেল চিন্তা-মুক্ত আৰু কোনো সময়ৰ চাপ নাই। নিজৰ গতিত উপভোগ কৰক।'
+              : language === 'bn'
+              ? 'সব খেলা সম্পূর্ণ উদ্বেগহীন ও কোনো সময়সীমার চাপ নেই। নিজের শান্ত গতিতে খেলুন।'
+              : language === 'hi'
+              ? 'सभी गतिविधियां चिंतामुक्त और समय के दबाव से रहित हैं। अपनी सहज गति से यादें संजोएं।'
+              : 'Designed with warmth and familiar cultural memories for joyful, pressure-free engagement.'}
+          </p>
         </div>
 
         {/* Category Filter Tabs */}
-        <div className="mt-6 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 activeCategory === cat.id
-                  ? 'bg-[#032517] text-white shadow-xs'
-                  : 'bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] border border-[#becabf]/40'
+                  ? 'bg-[#1F342A] text-white shadow-sm'
+                  : 'bg-[#F5EBE1]/60 hover:bg-[#F5EBE1] text-[#1F342A] border border-[rgba(70,80,60,0.08)]'
               }`}
             >
               {cat.label}
@@ -414,75 +414,55 @@ export const GamesHub: React.FC<GamesHubProps> = ({
         </div>
       </div>
 
-      {/* Zero-Anxiety Neuro-Wellness Safety Notice */}
-      <div className="p-4 bg-[#bfebba]/25 border border-[#bfebba] rounded-2xl flex items-center gap-3 text-xs font-medium text-[#032517]">
-        <span className="material-symbols-outlined text-[20px] text-[#416740] shrink-0">spa</span>
-        <span>
-          {language === 'as'
-            ? 'সকলো ব্যায়াম চিন্তা-মুক্ত আৰু কোনো সময়ৰ চাপ নাই। আপোনাৰ নিজৰ গতিত আনন্দ উপভোগ কৰক।'
-            : language === 'bn'
-            ? 'সকল অনুশীলন সম্পূর্ণ উদ্বেগহীন এবং কোনো সময়সীমার চাপ নেই। নিজের শান্ত গতিতে খেলুন।'
-            : language === 'hi'
-            ? 'सभी अभ्यास चिंतामुक्त और समय के दबाव से रहित हैं। अपनी सहज गति से अभ्यास करें।'
-            : 'Non-judgmental, pressure-free engagement designed to support neuroplasticity at your own peaceful pace.'}
-        </span>
-      </div>
-
       {/* Activity Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-        {filteredGames.map((game) => {
-          const currentLevel = (gameLevels[game.id] || 1) as 1 | 2 | 3 | 4 | 5;
-          const levelMeta = GAME_LEVELS[currentLevel] || GAME_LEVELS[1];
-          const tierLabel = {
-            en: `Tier ${currentLevel}/5`,
-            hi: `स्तर ${currentLevel}/5`,
-            as: `স্তৰ ${currentLevel}/৫`,
-            bn: `স্তর ${currentLevel}/৫`,
-            mni: `Thak ${currentLevel}/5`,
-          }[language] || `Tier ${currentLevel}/5`;
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {filteredGames.map((game, idx) => {
+          // Systematically assign soft pastel cards matching Reference 1 & 2
+          const cardPalettes = [
+            { bg: 'bg-[#D9E8D8]/70', border: 'border-[#708A74]/30', badgeBg: 'bg-white/80', badgeText: 'text-[#1F342A]' },
+            { bg: 'bg-[#FFF6D6]/70', border: 'border-[#E0D5B5]/60', badgeBg: 'bg-white/80', badgeText: 'text-[#785E22]' },
+            { bg: 'bg-[#F5EBE1]/80', border: 'border-[#E8C9B8]/50', badgeBg: 'bg-white/80', badgeText: 'text-[#635343]' },
+            { bg: 'bg-[#E8E1EF]/70', border: 'border-[#C8BDD5]/50', badgeBg: 'bg-white/80', badgeText: 'text-[#4F4160]' },
+            { bg: 'bg-[#FDECEF]/70', border: 'border-[#F2BAC5]/50', badgeBg: 'bg-white/80', badgeText: 'text-[#9A4250]' },
+          ];
+          const pal = cardPalettes[idx % cardPalettes.length];
 
           return (
             <div
               key={game.id}
               onClick={() => onSelectGame(game.id)}
-              className="group bg-[#ffffff] hover:bg-[#f7faf5] p-6 sm:p-7 rounded-3xl border-2 border-[#becabf]/60 hover:border-[#032517] shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col justify-between"
+              className={`group ${pal.bg} hover:brightness-102 p-6 sm:p-7 rounded-[28px] border ${pal.border} shadow-[0_4px_20px_rgba(70,80,60,0.05)] hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col justify-between`}
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-inner bg-[#ecefea] text-[#032517]"
-                  >
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm bg-white border border-[rgba(70,80,60,0.08)] group-hover:scale-105 transition-transform">
                     {game.icon}
                   </div>
-                  
-                  {/* Dynamic Level Badge */}
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ecefea] border border-[#becabf]/60 text-[#032517] text-xs font-bold shadow-2xs">
-                    <span>{levelMeta.badge}</span>
-                    <span>{levelMeta.name[language] || `Level ${currentLevel}`}</span>
+
+                  <div className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full ${pal.badgeBg} ${pal.badgeText} text-xs font-bold border border-black/5 shadow-xs`}>
+                    <span>{game.badge[language] || game.badge.en}</span>
                   </div>
                 </div>
 
-                <h3 className="text-xl font-serif font-bold text-[#032517] group-hover:text-[#416740] transition-colors">
+                <h3 className="text-xl font-serif font-bold text-[#1F342A] group-hover:text-[#2A4438] transition-colors">
                   {game.title[language] || game.title.en}
                 </h3>
-                <div className="text-xs font-bold text-[#456c44] mt-0.5">
+                <div className="text-xs font-bold text-[#708A74] mt-0.5">
                   {game.domainLabel[language] || game.domainLabel.en}
                 </div>
 
-                <p className="text-xs sm:text-sm text-[#3e4941] font-medium mt-2 leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#38483D] font-medium mt-2.5 leading-relaxed bg-white/40 p-3 rounded-2xl">
                   {game.description[language] || game.description.en}
                 </p>
               </div>
 
-              <div className="mt-5 pt-3.5 border-t border-[#ecefea] flex items-center justify-between text-xs font-bold text-[#032517]">
-                <span className="flex items-center gap-1.5 text-[#6f7a70]">
-                  <span>🌱 {tierLabel}</span>
-                  <span>•</span>
-                  <span>{game.badge[language] || game.badge.en}</span>
+              <div className="mt-5 pt-3.5 border-t border-[rgba(70,80,60,0.1)] flex items-center justify-between text-xs font-bold text-[#1F342A]">
+                <span className="text-[#5A7360]">
+                  🌸 {language === 'as' ? 'কোনো স্ক’ৰ বা চাপ নাই' : language === 'bn' ? 'কোনো স্কোর বা চাপ নেই' : language === 'hi' ? 'तनावमुक्त अनुभव' : 'Zero pressure'}
                 </span>
-                <span className="flex items-center gap-1 text-[#032517] font-extrabold group-hover:text-[#416740]">
+                <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1F342A] text-white font-bold group-hover:bg-[#2A4438] shadow-xs transition-all">
                   <span>{t('playGameAction', language)}</span>
-                  <span className="text-base group-hover:translate-x-1.5 transition-transform">➔</span>
+                  <span className="text-base group-hover:translate-x-0.5 transition-transform">➔</span>
                 </span>
               </div>
             </div>

@@ -1,284 +1,466 @@
 import React, { useState, useEffect } from 'react';
-import { Language, DDAState, DDAUpdateResult, BrainQuestPuzzle } from '../../types';
-import { brainQuestPuzzles } from '../../services/mockData';
-import { updateDDA, GAME_LEVELS } from '../../services/aiEngine';
-import { storage } from '../../services/storage';
-import { playSound, speak } from '../../services/voiceService';
-import confetti from 'canvas-confetti';
-import { ArrowLeft, Lightbulb, HelpCircle, CheckCircle2, XCircle, Trophy, Award, Sparkles, Volume2 } from 'lucide-react';
+import { Language } from '../../types';
+import { CommonGameHeader } from './CommonGameHeader';
+import { SessionEndingModal } from './SessionEndingModal';
+import { playSound } from '../../services/voiceService';
 import { t } from '../../services/i18n';
+import { MapPin, Compass, Sparkles, ArrowRight, RotateCcw, Heart } from 'lucide-react';
 
 interface BrainQuestProps {
   language: Language;
   onBack: () => void;
+  onFinishSession?: () => void;
 }
+
+interface HeritagePlaceItem {
+  id: string;
+  name: Record<Language, string>;
+  location: Record<Language, string>;
+  question: Record<Language, string>;
+  story: Record<Language, string>;
+  imageUrl: string;
+  options: { id: string; label: Record<Language, string>; isMatch: boolean }[];
+}
+
+const HERITAGE_PLACES: HeritagePlaceItem[] = [
+  {
+    id: 'hp-1',
+    name: {
+      en: 'Kaziranga National Park',
+      as: 'কাজিৰঙা ৰাষ্ট্ৰীয় উদ্যান',
+      bn: 'কাজিরাঙ্গা জাতীয় উদ্যান',
+      hi: 'काजीरंगा राष्ट्रीय उद्यान',
+      mni: 'Kaziranga National Park',
+    },
+    location: {
+      en: 'Golaghat & Nagaon, Assam',
+      as: 'গোলাঘাট আৰু নগাঁও, অসম',
+      bn: 'গোলাঘাট ও নগাঁও, আসাম',
+      hi: 'गोलाघाट एवं नगांव, असम',
+      mni: 'Assam',
+    },
+    question: {
+      en: 'Where do the majestic great one-horned rhinoceroses roam peacefully among the tall elephant grass?',
+      as: 'উখ ওখ ইকৰা-খাগৰিৰ বননিৰ মাজেৰে গৌৰৱময় এশিঙীয়া গঁড় শান্তভাৱে ক’ত চৰে?',
+      bn: 'উঁচু হাতিঘাসের বনের মধ্য দিয়ে রাজকীয় একশৃঙ্গ গণ্ডার শান্তভাবে কোথায় ঘুরে বেড়ায়?',
+      hi: 'लंबी हाथीघास के मैदानों में विशाल एक सींग वाले गैंडे शांति से कहाँ विचरण करते हैं?',
+      mni: 'Shing ama panba rhino fajana kadaida leibage?',
+    },
+    story: {
+      en: 'Kaziranga is the world’s sanctuary for over 2,600 great one-horned rhinos, protected by green wetlands and the gentle flow of the Brahmaputra.',
+      as: 'কাজিৰঙা হ’ল অসমৰ গৌৰৱ, য’ত ২৬০০ৰো অধিক এশিঙীয়া গঁড় প্ৰাকৃতিক বিল আৰু ব্ৰহ্মপুত্ৰৰ পাৰত শান্তভাৱে বিচৰণ কৰে।',
+      bn: 'কাজিরাঙ্গা হলো আসামের গর্ব, যেখানে ব্রহ্মপুত্রের কোল ঘেঁষে সবুজ জলাভূমিতে একশৃঙ্গ গণ্ডার ঘুরে বেড়ায়।',
+      hi: 'काजीरंगा असम का गौरव है, जहाँ ब्रह्मपुत्र के किनारे विशाल गैंडे सुकून से रहते हैं।',
+      mni: 'Kaziranga gi shing ama panba rhino gi fajaba mafamni.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=600&q=80',
+    options: [
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Kaziranga Grasslands',
+          as: 'কাজিৰঙাৰ সেউজ পথাৰ',
+          bn: 'কাজিরাঙ্গার তৃণভূমি',
+          hi: 'काजीरंगा के घास के मैदान',
+          mni: 'Kaziranga Grassland',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'City Highway',
+          as: 'নগৰৰ ব্যস্ত পথ',
+          bn: 'শহরের ব্যস্ত রাস্তা',
+          hi: 'शहर का राजमार्ग',
+          mni: 'City Highway',
+        },
+        isMatch: false,
+      },
+    ],
+  },
+  {
+    id: 'hp-2',
+    name: {
+      en: 'Majuli River Island',
+      as: 'মাজুলী নদী দ্বীপ',
+      bn: 'মাজুলী নদী দ্বীপ',
+      hi: 'माजुली नदी द्वीप',
+      mni: 'Majuli Turelgi Island',
+    },
+    location: {
+      en: 'Brahmaputra River, Assam',
+      as: 'ব্ৰহ্মপুত্ৰৰ বুকুত, অসম',
+      bn: 'ব্রহ্মপুত্র নদী, আসাম',
+      hi: 'ब्रह्मपुत्र नदी, असम',
+      mni: 'Brahmaputra Turel',
+    },
+    question: {
+      en: 'Which serene river island is celebrated for its historic Satras, devotion, and traditional clay-and-bamboo masks?',
+      as: 'ঐতিহাসিক সত্ৰ সংস্কৃতি, ভক্তি আৰু মুখা শিল্পৰ বাবে কোনটো নদী দ্বীপ বিশ্ববিখ্যাত?',
+      bn: 'ঐতিহাসিক সত্র সংস্কৃতি, ভক্তিমূলক কীর্তন ও মুখোশ শিল্পের জন্য কোন নদী দ্বীপ বিখ্যাত?',
+      hi: 'ऐतिहासिक सत्रों, भक्ति संगीत और पारंपरिक मुखौटा कला के लिए कौन सा नदी द्वीप प्रसिद्ध है?',
+      mni: 'Satra amasung mask gi fajaba turelgi island kari koubage?',
+    },
+    story: {
+      en: 'Majuli is the largest inhabited river island on Earth, echoing with the soft sound of prayer cymbals (Taal) and timeless Bhaona theatre.',
+      as: 'মাজুলী সত্ৰীয়া সংস্কৃতিৰ প্ৰাণকেন্দ্ৰ। সত্ৰসমূহত ভোৰতালৰ মৃদু ধ্বনি আৰু ভাওনাৰ মুখা শিল্পই মনলৈ আধ্যাত্মিক শান্তি আনে।',
+      bn: 'মাজুলী পৃথিবীর বৃহত্তম নদী দ্বীপ। এখানে খোল-করতালের সুর এবং ভাওনার মুখোশ শিল্প এক অপার্থিব প্রশান্তি তৈরি করে।',
+      hi: 'माजुली विश्व का विशालतम नदी द्वीप है, जहाँ सत्रों में मृदंग और झांझ की गूंज मन को असीम शांति देती है।',
+      mni: 'Majuli turelgi island da satra amasung mask fajana leiri.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80',
+    options: [
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Majuli Holy Island',
+          as: 'পৱিত্ৰ মাজুলী সত্ৰ দ্বীপ',
+          bn: 'পবিত্র মাজুলী দ্বীপ',
+          hi: 'पवित्र माजुली द्वीप',
+          mni: 'Majuli Island',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Busy Railway Station',
+          as: 'ৰে’ল ষ্টেচন',
+          bn: 'রেলওয়ে স্টেশন',
+          hi: 'रेलवे स्टेशन',
+          mni: 'Railway Station',
+        },
+        isMatch: false,
+      },
+    ],
+  },
+  {
+    id: 'hp-3',
+    name: {
+      en: 'Kamakhya Temple on Nilachal Hill',
+      as: 'নীলাচলৰ কামাখ্যা ধাম',
+      bn: 'নীলাচলের কামাখ্যা মন্দির',
+      hi: 'नीलाचल पर्वत का कामाख्या मंदिर',
+      mni: 'Kamakhya Laisang',
+    },
+    location: {
+      en: 'Guwahati, Assam',
+      as: 'গুৱাহাটী, অসম',
+      bn: 'গুয়াহাটি, আসাম',
+      hi: 'गुवाहाटी, असम',
+      mni: 'Guwahati',
+    },
+    question: {
+      en: 'Which sacred temple sits atop Nilachal hill overlooking the wide, silvery waters of the Brahmaputra?',
+      as: 'ব্ৰহ্মপুত্ৰৰ ৰূপালী ঢৌলৈ চাই নীলাচল পাহাৰৰ ওপৰত কোনটো প্ৰাচীন পৱিত্ৰ দেৱালয় অৱস্থিত?',
+      bn: 'ব্রহ্মপুত্র নদের রূপোলী জলের দিকে তাকিয়ে নীলাচল পাহাড়ের চূড়ায় কোন পবিত্র তীর্থস্থান অবস্থিত?',
+      hi: 'ब्रह्मपुत्र नदी के दर्शन करते हुए नीलाचल पर्वत पर कौन सा प्राचीन पावन मंदिर स्थित है?',
+      mni: 'Nilachal chinggi mathakta leiba laisang kari koubage?',
+    },
+    story: {
+      en: 'Perched high with panoramic views, families visit during dawn to light earthen lamps and offer prayer offerings on bell-metal Xorai.',
+      as: 'পুৱাৰ বেলি উঠাৰ সময়ত কামাখ্যাৰ চোতালত কাঁহৰ শৰাই আৰু মাটিৰ চাকি লৈ পৰিয়ালে আশীৰ্বাদ বিচাৰে।',
+      bn: 'ভোরের স্নিগ্ধ আলোয় কামাখ্যার আঙিনায় কাঁসার শরাই আর প্রদীপ জ্বালিয়ে শান্তি প্রার্থনা করার পরম স্মৃতি।',
+      hi: 'सुबह की पावन बेला में कामाख्या के प्रांगण में दिया जलाकर परिवार की खुशहाली की प्रार्थना की जाती है।',
+      mni: 'Ayukta Kamakhya laisangda thaomei thambada nungcba phangngi.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1545232979-fbf675951a83?auto=format&fit=crop&w=600&q=80',
+    options: [
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Kamakhya Temple',
+          as: 'কামাখ্যা দেৱালয়',
+          bn: 'কামাখ্যা ধাম',
+          hi: 'माँ कामाख्या धाम',
+          mni: 'Kamakhya Laisang',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Ocean Harbor',
+          as: 'সমুদ্ৰ বন্দৰ',
+          bn: 'সমুদ্র বন্দর',
+          hi: 'समुद्री बंदरगाह',
+          mni: 'Ocean Port',
+        },
+        isMatch: false,
+      },
+    ],
+  },
+  {
+    id: 'hp-4',
+    name: {
+      en: 'Loktak Floating Lake',
+      as: 'মণিপুৰৰ লোকটক হ্ৰদ',
+      bn: 'মণিপুরের লোকটাক হ্রদ',
+      hi: 'मणिपुर की लोकटक झील',
+      mni: 'Loktak Pat',
+    },
+    location: {
+      en: 'Moirang, Manipur',
+      as: 'মইৰাং, মণিপুৰ',
+      bn: 'মইরাং, মণিপুর',
+      hi: 'मोइरांग, मणिपुर',
+      mni: 'Moirang, Manipur',
+    },
+    question: {
+      en: 'Which freshwater lake is famous for its circular green floating islands called "Phumdis"?',
+      as: 'ওপঙি থকা অনন্য সেউজীয়া "ফুমদি" দ্বীপৰ বাবে বিশ্বখ্যাত মণিপুৰৰ হ্ৰদটোৰ নাম কি?',
+      bn: 'গোলাকার ভাসমান সবুজ দ্বীপ বা "ফুমদি"র জন্য বিখ্যাত মনোরম মিষ্টি জলের হ্রদ কোনটি?',
+      hi: 'तैरते हुए गोल हरे-भरे बायोमास द्वीपों ("फुमदी") के लिए कौन सी प्रसिद्ध झील जानी जाती है?',
+      mni: 'Phumdi leiba fajaba pat ashi kari koubage?',
+    },
+    story: {
+      en: 'Loktak Lake is a calm freshwater expanse where fishermen glide gently on dug-out canoes among blooming water lilies.',
+      as: 'লোকটক হ্ৰদ মণিপুৰৰ প্ৰাণ। শান্ত পানীত ভেট ফুলৰ মাজেৰে সৰু নাও লৈ শান্তভাৱে মাছমৰীয়াসকলে বঠা বায়।',
+      bn: 'লোকটাক হ্রদ মণিপুরের রত্ন। শান্ত নীল জলে শাপলা ফুলের মাঝে ছোট ছোট নৌকো ভাসিয়ে জেলেরা ঘুরে বেড়ায়।',
+      hi: 'लोकटक झील मणिपुर की जीवनरेखा है, जहाँ शांत जल में कमल के फूलों के बीच नावें तैरती हैं।',
+      mni: 'Loktak pat ta sangai saa amsung fajaba heikak thambal satli.',
+    },
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+    options: [
+      {
+        id: 'opt-1',
+        label: {
+          en: 'Loktak Floating Lake',
+          as: 'লোকটক হ্ৰদ',
+          bn: 'লোকটাক হ্রদ',
+          hi: 'लोकटक फुमदी झील',
+          mni: 'Loktak Pat',
+        },
+        isMatch: true,
+      },
+      {
+        id: 'opt-2',
+        label: {
+          en: 'Desert Sand Dunes',
+          as: 'মৰুভূমিৰ বালি',
+          bn: 'মরুভূমির বালুকা',
+          hi: 'रेगिस्तान के टीले',
+          mni: 'Desert',
+        },
+        isMatch: false,
+      },
+    ],
+  },
+];
 
 export const BrainQuest: React.FC<BrainQuestProps> = ({
   language,
   onBack,
+  onFinishSession,
 }) => {
-  const [ddaState, setDdaState] = useState<DDAState>(() => storage.loadGameDDA('brain_quest', 1));
-  const [activePuzzles, setActivePuzzles] = useState<BrainQuestPuzzle[]>([]);
-  const [puzzleIndex, setPuzzleIndex] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState<boolean>(false);
-  const [score, setScore] = useState<number>(0);
-  const [isFinished, setIsFinished] = useState<boolean>(false);
-  const [startTime, setStartTime] = useState<number>(Date.now());
-  const [levelResult, setLevelResult] = useState<DDAUpdateResult | null>(null);
+  const [softHintId, setSoftHintId] = useState<string | null>(null);
+  const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isSessionEnded, setIsSessionEnded] = useState<boolean>(false);
+  const [isTimeCapModalOpen, setIsTimeCapModalOpen] = useState<boolean>(false);
 
-  // Pick 3 random puzzles tuned to current DDA level
-  const initRound = (lvl: number) => {
-    // Filter matching level or nearby levels
-    const exactMatches = brainQuestPuzzles.filter((p) => p.level === lvl);
-    const fallbackMatches = brainQuestPuzzles.filter((p) => Math.abs((p.level || 1) - lvl) <= 1);
-    const pool = exactMatches.length >= 3 ? exactMatches : fallbackMatches.length >= 3 ? fallbackMatches : brainQuestPuzzles;
-
-    // Shuffle and pick 3 puzzles
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
-    // Shuffle options for each puzzle
-    const withShuffledOptions = shuffled.map((p) => ({
-      ...p,
-      options: [...p.options].sort(() => Math.random() - 0.5),
-    }));
-
-    setActivePuzzles(withShuffledOptions);
-    setPuzzleIndex(0);
-    setSelectedOptionId(null);
-    setShowHint(false);
-    setScore(0);
-    setIsFinished(false);
-    setLevelResult(null);
-    setStartTime(Date.now());
-  };
-
+  // 12-15 min gentle session cap
   useEffect(() => {
-    initRound(ddaState.level);
+    const timer = setTimeout(() => {
+      setIsTimeCapModalOpen(true);
+    }, 12 * 60 * 1000);
+    return () => clearTimeout(timer);
   }, []);
 
-  const currentPuzzle = activePuzzles[puzzleIndex] || activePuzzles[0] || brainQuestPuzzles[0];
+  const currentPlace = HERITAGE_PLACES[currentIndex % HERITAGE_PLACES.length] || HERITAGE_PLACES[0];
 
-  const handleOptionSelect = (optionId: string) => {
-    if (selectedOptionId || !currentPuzzle) return; // already answered
+  const handleSelectOption = (optionId: string) => {
     setSelectedOptionId(optionId);
+    const chosen = currentPlace.options.find((o) => o.id === optionId);
 
-    const option = currentPuzzle.options.find((o) => o.id === optionId);
-    const isCorrect = !!option?.isCorrect;
-
-    if (isCorrect) {
+    if (chosen?.isMatch) {
       playSound('success');
-      setScore((s) => s + 1);
+      setIsRevealed(true);
     } else {
+      // Gentle guidance without penalty or red color
       playSound('click');
+      const target = currentPlace.options.find((o) => o.isMatch);
+      if (target) setSoftHintId(target.id);
+      setTimeout(() => {
+        setIsRevealed(true);
+      }, 1000);
     }
-
-    setTimeout(() => {
-      if (puzzleIndex + 1 < activePuzzles.length) {
-        setPuzzleIndex((prev) => prev + 1);
-        setSelectedOptionId(null);
-        setShowHint(false);
-      } else {
-        finishGame(score + (isCorrect ? 1 : 0));
-      }
-    }, 1600);
   };
 
-  const finishGame = (finalScore: number) => {
-    setIsFinished(true);
-    const timeTakenMs = Date.now() - startTime;
-    const totalQ = Math.max(1, activePuzzles.length);
-    const avgLatency = Math.round(timeTakenMs / totalQ);
-    const accuracy = finalScore / totalQ;
-    const success = accuracy >= 0.66;
-
-    const updated = updateDDA(ddaState, { success, accuracy, reactionTimeMs: avgLatency });
-    setDdaState(updated);
-    storage.saveGameDDA('brain_quest', updated);
-    setLevelResult(updated);
-
-    if (updated.leveledUp) {
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-      if (updated.feedbackMessage) {
-        speak(updated.feedbackMessage[language], language);
-      }
+  const handleNext = () => {
+    if (currentIndex + 1 >= HERITAGE_PLACES.length) {
+      setIsSessionEnded(true);
     } else {
-      confetti({ particleCount: 50, spread: 60 });
+      setCurrentIndex((prev) => prev + 1);
+      setSelectedOptionId(null);
+      setSoftHintId(null);
+      setIsRevealed(false);
     }
-
-    storage.saveCognitiveSession({
-      id: `sess-${Date.now()}`,
-      gameId: 'brain_quest',
-      domain: 'executive_function',
-      timestamp: new Date().toISOString(),
-      date: new Date().toISOString().split('T')[0],
-      score: Math.round(accuracy * 100),
-      maxScore: 100,
-      accuracy,
-      reactionTimeMs: avgLatency,
-      difficultyLevel: updated.level,
-    });
   };
+
+  const handleFinishEarly = () => {
+    if (onFinishSession) {
+      onFinishSession();
+    } else {
+      setIsSessionEnded(true);
+    }
+  };
+
+  const readAloudText = `${currentPlace.question[language] || currentPlace.question.en}. ${currentPlace.story[language] || currentPlace.story.en}`;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Navigation Header */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-xs border border-amber-200">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-2xl text-sm font-bold transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{t('back', language)}</span>
-        </button>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20 font-sans">
+      {/* Unified Calm Header */}
+      <CommonGameHeader
+        language={language}
+        title={t('brainQuestTitle', language)}
+        subtitle={language === 'as' ? 'চিনাকি স্থান আৰু সোণালী স্মৃতি' : language === 'bn' ? 'পরিচিত স্থান ও ঐতিহ্যমণ্ডিত স্মৃতি' : language === 'hi' ? 'जानी-पहचानी जगहें व पावन यादें' : 'Familiar Heritage Places & Stories'}
+        readAloudText={readAloudText}
+        onBack={onBack}
+        onFinishEarly={handleFinishEarly}
+      />
 
-        <div className="flex items-center gap-3 text-xs font-bold text-stone-700">
-          <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-2xl border border-emerald-200 shadow-2xs">
-            <span className="text-base">{GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🧩'}</span>
-            <span className="text-xs font-black text-emerald-800">
-              {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}
-            </span>
-          </div>
-          <span className="bg-amber-100 text-amber-900 px-3 py-1.5 rounded-xl">
-            {t('question', language)} {puzzleIndex + 1} / {activePuzzles.length || 3}
-          </span>
-          <span className="bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-xl">
-            {t('score', language)}: {score}
-          </span>
-        </div>
-      </div>
-
-      {/* Main Puzzle Card */}
-      {!isFinished ? (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-200 space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-2xl">
-              🧩
-            </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-stone-900">
-                {t('brainQuestTitle', language)}
-              </h2>
-              <p className="text-xs text-stone-500 font-medium">
-                {t('brainQuestSubtitle', language)}
-              </p>
+      {/* Main Single-Task Screen */}
+      {!isSessionEnded ? (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-[#becabf]/60 space-y-6">
+          {/* Gentle Question */}
+          <div className="text-center space-y-2">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] leading-relaxed">
+              {currentPlace.question[language] || currentPlace.question.en}
+            </h2>
+            <div className="inline-flex items-center gap-1.5 text-xs text-[#6f7a70] font-bold">
+              <MapPin className="w-3.5 h-3.5 text-[#416740]" />
+              <span>{currentPlace.location[language] || currentPlace.location.en}</span>
             </div>
           </div>
 
-          {/* Question Box */}
-          <div className="p-6 rounded-2xl bg-amber-50/70 border-2 border-amber-200/80 flex items-start justify-between gap-4">
-            <p className="text-lg sm:text-xl font-extrabold text-stone-900 leading-relaxed flex-1">
-              {currentPuzzle.question[language] || currentPuzzle.question.en}
-            </p>
-            <button
-              onClick={() => speak(currentPuzzle.question[language] || currentPuzzle.question.en, language)}
-              className="p-2.5 rounded-xl bg-amber-200/80 hover:bg-amber-300 text-amber-950 transition-colors cursor-pointer shrink-0 shadow-2xs"
-              title={t('voice.readAloud', language)}
-              aria-label={t('voice.readAloud', language)}
-            >
-              <Volume2 className="w-5 h-5 text-amber-900" />
-            </button>
+          {/* Large Scenic Photograph */}
+          <div className="relative mx-auto max-w-md h-64 sm:h-72 rounded-3xl overflow-hidden shadow-lg border-3 border-[#becabf]/60 bg-[#f7faf5]">
+            <img
+              src={currentPlace.imageUrl}
+              alt={currentPlace.name[language] || currentPlace.name.en}
+              className="w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+            />
           </div>
 
-          {/* Options */}
-          <div className="space-y-3">
-            {currentPuzzle.options.map((option) => {
-              const isChosen = selectedOptionId === option.id;
-              let btnClass = 'bg-stone-50 hover:bg-amber-50 border-stone-200 text-stone-800';
+          {/* Large Tactile Choices (Zero Red Borders, Zero Penalties) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+            {currentPlace.options.map((opt) => {
+              const isChosen = selectedOptionId === opt.id;
+              const isTarget = opt.isMatch;
+              const isHinted = softHintId === opt.id;
 
-              if (selectedOptionId) {
-                if (option.isCorrect) {
-                  btnClass = 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-400';
-                } else if (isChosen) {
-                  btnClass = 'bg-rose-50 border-rose-500 text-rose-900 ring-2 ring-rose-400';
-                }
+              let btnStyle = 'bg-[#f7faf5] hover:bg-[#ecefea] text-[#032517] border-[#becabf]/70';
+
+              if (isRevealed && isTarget) {
+                btnStyle = 'bg-[#bfebba]/50 border-[#416740] text-[#032517] ring-2 ring-[#416740]/30 shadow-sm';
+              } else if (isHinted) {
+                btnStyle = 'bg-amber-50 border-amber-300 text-[#032517] shadow-sm';
               }
 
               return (
                 <button
-                  key={option.id}
-                  disabled={selectedOptionId !== null}
-                  onClick={() => handleOptionSelect(option.id)}
-                  className={`w-full text-left p-4 sm:p-5 rounded-2xl border-2 font-extrabold text-base transition-all flex items-center justify-between ${btnClass} cursor-pointer active:scale-98`}
+                  key={opt.id}
+                  disabled={isRevealed}
+                  onClick={() => handleSelectOption(opt.id)}
+                  className={`p-5 rounded-2xl border-2 text-base sm:text-lg font-serif font-bold text-center transition-all cursor-pointer min-h-[72px] flex items-center justify-center gap-2 ${btnStyle}`}
                 >
-                  <span>{option.label[language] || option.label.en}</span>
-                  {selectedOptionId && option.isCorrect && (
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                  )}
-                  {selectedOptionId && isChosen && !option.isCorrect && (
-                    <XCircle className="w-6 h-6 text-rose-600 shrink-0" />
+                  <span>{opt.label[language] || opt.label.en}</span>
+                  {isRevealed && isTarget && (
+                    <span className="text-[#416740] font-black text-sm">✓</span>
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Hint & Cultural Context */}
-          <div className="pt-2 flex items-center justify-between border-t border-stone-100">
-            <button
-              onClick={() => setShowHint(!showHint)}
-              className="flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-100 px-3 py-2 rounded-xl cursor-pointer"
-            >
-              <Lightbulb className="w-4 h-4" />
-              <span>{showHint ? t('hideHint', language) : t('hint', language)}</span>
-            </button>
+          {/* Revealed Comforting Story & Next Button */}
+          {isRevealed && (
+            <div className="pt-3 space-y-4 animate-in fade-in duration-500">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#bfebba]/25 border border-[#416740]/30 text-xs sm:text-sm text-[#032517] leading-relaxed">
+                <div className="font-bold text-[#032517] mb-1">
+                  🌿 {currentPlace.name[language] || currentPlace.name.en}
+                </div>
+                <p className="text-[#3e4941]">
+                  {currentPlace.story[language] || currentPlace.story.en}
+                </p>
+              </div>
 
-            <span className="text-[11px] text-stone-400 italic">
-              {currentPuzzle.culturalContext}
-            </span>
-          </div>
-
-          {showHint && (
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs font-medium text-amber-900 animate-in fade-in duration-200">
-              💡 {currentPuzzle.hint[language] || currentPuzzle.hint.en}
+              <div className="text-center pt-2">
+                <button
+                  onClick={handleNext}
+                  className="px-8 py-4 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-base shadow-md transition-transform active:scale-[0.98] cursor-pointer inline-flex items-center gap-2"
+                >
+                  <span>{t('exploreAnotherPlace', language)}</span>
+                  <span>➔</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
       ) : (
-        /* Completion Screen */
-        <div className="bg-white rounded-3xl p-8 shadow-xl border border-stone-200 text-center space-y-5 animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 mx-auto flex items-center justify-center text-3xl">
-            <Trophy className="w-8 h-8 text-amber-600" />
+        /* Neutral, Positive Finish Screen (NO SCORES) */
+        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-md border-2 border-[#becabf]/60 text-center space-y-5 animate-in fade-in duration-500 font-sans">
+          <div className="w-16 h-16 rounded-full bg-[#bfebba]/50 text-[#032517] mx-auto flex items-center justify-center text-3xl shadow-xs">
+            🏞️
           </div>
-          <h3 className="text-2xl sm:text-3xl font-black text-stone-900">
-            {t('brainQuestSolvedTitle', language)}
-          </h3>
-          <p className="text-stone-600 text-sm">
-            {t('score', language)}: <strong className="text-emerald-700 font-black">{score}</strong> / {activePuzzles.length}
-          </p>
 
-          {/* Level Adaptive Feedback */}
-          {levelResult && (
-            <div className={`mt-4 mx-auto max-w-md p-3.5 rounded-2xl flex items-center justify-center gap-2.5 font-black text-sm shadow-md ${
-              levelResult.leveledUp
-                ? 'bg-amber-400 text-stone-950 animate-bounce'
-                : 'bg-emerald-50 text-emerald-950 border border-emerald-200'
-            }`}>
-              <span className="text-xl">
-                {GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.badge || '🧩'}
-              </span>
-              <span>
-                {levelResult.feedbackMessage?.[language] ||
-                  `${GAME_LEVELS[ddaState.level as 1 | 2 | 3 | 4 | 5]?.name[language] || `Level ${ddaState.level}`}`}
-              </span>
-            </div>
-          )}
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#032517]">
+              {t('sessionCompleteMessage', language)}
+            </h2>
+            <p className="text-sm text-[#3e4941] font-medium max-w-md mx-auto leading-relaxed">
+              {language === 'as'
+                ? 'আজিৰ সকলো ঐতিহাসিক স্থানৰ সোণালী স্মৃতি দেখা হ’ল। মনলৈ আনন্দ আৰু শান্তি আহক।'
+                : language === 'bn'
+                ? 'আজকের সকল পরিচিত স্থান ও সুন্দর স্মৃতি আমরা একসাথে দেখলাম। মন ভালো থাকুক।'
+                : language === 'hi'
+                ? 'आज की सभी जानी-पहचानी जगहें और उनकी कहानियां हमने साथ मिलकर देखीं। मन प्रसन्न रहे।'
+                : 'All heritage places and comforting stories were explored together peacefully.'}
+            </p>
+          </div>
 
-          <div className="flex justify-center gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
             <button
-              onClick={() => initRound(ddaState.level)}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-sm shadow-md cursor-pointer transition-transform active:scale-95"
+              onClick={() => {
+                if (onFinishSession) {
+                  onFinishSession();
+                } else {
+                  onBack();
+                }
+              }}
+              className="py-3.5 px-6 bg-[#032517] hover:bg-[#1b3b2b] text-white font-extrabold rounded-2xl text-sm shadow-md transition-transform active:scale-[0.98] cursor-pointer"
             >
-              {t('playAgain', language)}
+              {language === 'as' ? 'সত্ৰৰ সাৰাংশ চাওক' : language === 'bn' ? 'সেশনের সারাংশ দেখুন' : language === 'hi' ? 'सत्र सारांश देखें' : 'View Session Summary'}
             </button>
             <button
-              onClick={onBack}
-              className="px-6 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-extrabold rounded-2xl text-sm cursor-pointer"
+              onClick={() => {
+                setCurrentIndex(0);
+                setSelectedOptionId(null);
+                setSoftHintId(null);
+                setIsRevealed(false);
+                setIsSessionEnded(false);
+              }}
+              className="py-3.5 px-6 bg-[#ecefea] hover:bg-[#e0e3de] text-[#032517] font-extrabold rounded-2xl text-sm border border-[#becabf]/60 cursor-pointer"
             >
-              {t('home', language)}
+              {t('exploreAnotherPlace', language)}
             </button>
           </div>
         </div>
       )}
+
+      {/* 10-15 Min Gentle Session Ending Cap */}
+      <SessionEndingModal
+        isOpen={isTimeCapModalOpen}
+        language={language}
+        onFinish={() => {
+          setIsTimeCapModalOpen(false);
+          handleFinishEarly();
+        }}
+        onContinue={() => setIsTimeCapModalOpen(false)}
+      />
     </div>
   );
 };

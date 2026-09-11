@@ -1,5 +1,21 @@
 import { Language, FolkTuneId } from '../types';
 
+export type SoundName =
+  | 'pepa_flute'
+  | 'temple_bell'
+  | 'monsoon_rain'
+  | 'lake_ripples'
+  | 'hornbill_call'
+  | 'success'
+  | 'click'
+  | 'leaf_pluck'
+  | 'gentle_buzz'
+  | 'bihu_dhol'
+  | 'stream_water'
+  | 'conch_shell'
+  | 'soft_chime'
+  | 'celebration';
+
 class VoiceService {
   private synth: SpeechSynthesis | null = null;
   private audioCtx: AudioContext | null = null;
@@ -94,7 +110,7 @@ class VoiceService {
   }
 
   // Web Audio API procedural synthesis for North-East organic soundscapes
-  public playSound(sound: 'pepa_flute' | 'temple_bell' | 'monsoon_rain' | 'lake_ripples' | 'hornbill_call' | 'success' | 'click' | 'leaf_pluck' | 'gentle_buzz' | 'bihu_dhol' | 'stream_water' | 'conch_shell'): void {
+  public playSound(sound: SoundName): void {
     if (this.isMuted) return;
     try {
       const ctx = this.getAudioContext();
@@ -130,6 +146,7 @@ class VoiceService {
           break;
         }
 
+        case 'soft_chime':
         case 'temple_bell': {
           // Kamakhya bronze temple bell chime
           const freqs = [587.33, 880, 1174.66, 1760];
@@ -216,6 +233,7 @@ class VoiceService {
           break;
         }
 
+        case 'celebration':
         case 'success': {
           // Pleasant celebratory major triad chime
           [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
@@ -607,7 +625,7 @@ export function stopSpeaking(): void {
   voiceService.stop();
 }
 
-export function playSound(sound: 'pepa_flute' | 'temple_bell' | 'monsoon_rain' | 'lake_ripples' | 'hornbill_call' | 'success' | 'click' | 'leaf_pluck' | 'gentle_buzz' | 'bihu_dhol' | 'stream_water' | 'conch_shell'): void {
+export function playSound(sound: SoundName): void {
   voiceService.playSound(sound);
 }
 

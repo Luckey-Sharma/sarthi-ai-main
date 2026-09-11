@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Language } from '../../types';
-import { speak, playSound } from '../../services/voiceService';
-import { Globe, Volume2, Check, ArrowRight, Sparkles } from 'lucide-react';
+import { speak, stopSpeaking, playSound } from '../../services/voiceService';
+import { Globe, Volume2, VolumeX, Check, ArrowRight, Sparkles } from 'lucide-react';
 
 interface LanguageOption {
   code: Language;
@@ -85,6 +85,10 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
     if (isOpen) {
       setSelected(currentLanguage || 'en');
     }
+    return () => {
+      stopSpeaking();
+      setIsSpeaking(false);
+    };
   }, [isOpen, currentLanguage]);
 
   if (!isOpen) return null;
@@ -92,6 +96,16 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
   const handleLanguageClick = (lang: LanguageOption) => {
     setSelected(lang.code);
     playSound('click');
+  };
+
+  const handlePronounceGreeting = (lang: LanguageOption, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+      return;
+    }
+    stopSpeaking();
     setIsSpeaking(true);
     speak(lang.greeting, lang.code, () => {
       setIsSpeaking(false);
@@ -99,28 +113,30 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
   };
 
   const handleConfirm = () => {
+    stopSpeaking();
+    setIsSpeaking(false);
     playSound('success');
     onSelectLanguage(selected);
     if (onClose) onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl border-2 border-amber-300 max-w-2xl w-full p-6 sm:p-8 max-h-[92vh] overflow-y-auto flex flex-col justify-between space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200 font-sans">
+      <div className="bg-[#FAF6EE] rounded-[32px] shadow-2xl border border-[rgba(70,80,60,0.15)] max-w-2xl w-full p-6 sm:p-8 max-h-[92vh] overflow-y-auto flex flex-col justify-between space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white mx-auto flex items-center justify-center shadow-lg shadow-emerald-700/20">
-            <Globe className="w-8 h-8" />
+          <div className="w-16 h-16 rounded-3xl bg-[#1F342A] text-white mx-auto flex items-center justify-center shadow-md border border-[#708A74]/30">
+            <Globe className="w-8 h-8 text-[#D9E8D8]" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1F342A] tracking-tight">
             {selected === 'en' ? 'Choose Your Language' :
              selected === 'as' ? 'আপোনাৰ ভাষা বাছক' :
              selected === 'bn' ? 'আপনার ভাষা নির্বাচন করুন' :
              selected === 'hi' ? 'अपनी भाषा चुनें' :
              'নখোইগী লোন্ খনবীয়ু'}
           </h2>
-          <p className="text-xs sm:text-sm text-stone-500 font-medium">
-            {selected === 'en' ? 'Select your preferred language to customize your SmritiSetu NER experience' :
+          <p className="text-xs sm:text-sm text-[#495E4F] font-medium">
+            {selected === 'en' ? 'Select your preferred language to customize your SmritiAI experience' :
              selected === 'as' ? 'স্মৃতিসেতু ব্যৱহাৰ কৰিবলৈ আপোনাৰ পছন্দৰ ভাষা বাছক' :
              selected === 'bn' ? 'স্মৃতিসেতু ব্যবহারের জন্য আপনার পছন্দের ভাষা নির্বাচন করুন' :
              selected === 'hi' ? 'स्मृति सेतु का उपयोग करने के लिए अपनी पसंदीदा भाषा चुनें' :
@@ -133,13 +149,21 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
           {LANGUAGES.map((lang) => {
             const isChosen = selected === lang.code;
             return (
-              <button
+              <div
                 key={lang.code}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleLanguageClick(lang)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleLanguageClick(lang);
+                  }
+                }}
                 className={`w-full p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-4 text-left select-none ${
                   isChosen
-                    ? `${lang.accentColor} ring-4 ring-emerald-300/40 shadow-md font-bold`
-                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
+                    ? 'bg-[#D9E8D8] border-[#708A74] shadow-sm font-bold text-[#1F342A]'
+                    : 'bg-white/80 hover:bg-white border-[rgba(70,80,60,0.12)] text-[#1F342A]'
                 }`}
               >
                 <div className="flex items-center gap-4 min-w-0">
@@ -148,14 +172,14 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
                   </span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+                      <h3 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#1F342A]">
                         {lang.native}
                       </h3>
-                      <span className="text-xs font-bold text-stone-500">
+                      <span className="text-xs font-bold text-[#5A7360]">
                         {lang.code === 'en' ? '(Primary)' : `(${lang.englishName})`}
                       </span>
                     </div>
-                    <p className="text-xs text-stone-500 font-medium mt-0.5 truncate">
+                    <p className="text-xs text-[#495E4F] font-medium mt-0.5 truncate">
                       {lang.region}
                     </p>
                   </div>
@@ -163,28 +187,39 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
 
                 <div className="flex items-center gap-2 shrink-0">
                   {isChosen && (
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-[#1F342A] text-white flex items-center justify-center">
                       <Check className="w-4 h-4 stroke-[3]" />
                     </div>
                   )}
-                  <div
-                    className="p-2 rounded-xl bg-stone-200/60 hover:bg-stone-200 text-stone-600 transition-colors"
-                    title="Pronounce greeting"
+                  <button
+                    type="button"
+                    onClick={(e) => handlePronounceGreeting(lang, e)}
+                    className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                      isSpeaking && selected === lang.code
+                        ? 'bg-[#BF5844] text-white shadow-sm'
+                        : 'bg-[#FAF6EE] hover:bg-[#F5EBE1] text-[#1F342A] border border-[rgba(70,80,60,0.1)]'
+                    }`}
+                    title={isSpeaking && selected === lang.code ? 'Stop audio' : 'Listen to greeting'}
+                    aria-label="Listen to greeting"
                   >
-                    <Volume2 className="w-4 h-4" />
-                  </div>
+                    {isSpeaking && selected === lang.code ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-[#708A74]" />
+                    )}
+                  </button>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
 
         {/* Footer Confirmation */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-stone-100">
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[rgba(70,80,60,0.1)]">
           {canClose && onClose ? (
             <button
               onClick={onClose}
-              className="text-xs font-bold text-stone-400 hover:text-stone-600 px-3 py-2 cursor-pointer"
+              className="text-xs font-bold text-[#5A7360] hover:text-[#1F342A] px-3 py-2 cursor-pointer transition-colors"
             >
               {selected === 'en' ? 'Keep Current' :
                selected === 'as' ? 'পূৰ্বৰ ভাষা ৰাখক' :
@@ -194,8 +229,8 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
                'Keep Current'}
             </button>
           ) : (
-            <div className="text-[11px] text-stone-400 font-semibold flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <div className="text-[11px] text-[#5A7360] font-semibold flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#785E22]" />
               <span>{selected === 'en' ? 'You can always change language later from the top menu' :
                      selected === 'hi' ? 'आप बाद में कभी भी ऊपर के मेनू से भाषा बदल सकते हैं' :
                      selected === 'bn' ? 'আপনি পরবর্তীতে ওপরের মেনু থেকে ভাষা পরিবর্তন করতে পারবেন' :
@@ -207,7 +242,7 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
 
           <button
             onClick={handleConfirm}
-            className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-700/25 transition-transform active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3.5 bg-[#1F342A] hover:bg-[#2A4438] text-white font-bold text-sm rounded-2xl shadow-md transition-transform active:scale-95 cursor-pointer flex items-center justify-center gap-2"
           >
             <span>
               {selected === 'en' ? 'Start in English' :
@@ -216,7 +251,7 @@ export const LanguageWelcomeModal: React.FC<LanguageWelcomeModalProps> = ({
                selected === 'hi' ? 'हिन्दी में शुरू करें' :
                'মৈতৈলোন্দা হৌরো'}
             </span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 text-[#D9E8D8]" />
           </button>
         </div>
       </div>

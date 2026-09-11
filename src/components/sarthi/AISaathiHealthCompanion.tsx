@@ -45,6 +45,10 @@ import {
   Award,
   Layers,
   Info,
+  Activity,
+  Database,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 
 interface AISaathiHealthCompanionProps {
@@ -128,8 +132,8 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
       if (initialQuery && initialQuery !== '') {
         handleSendQuestion(initialQuery);
       } else if (chatHistory.length === 0) {
-        // Initial warm welcome
-        handleSendQuestion('What should I eat today to stay healthy?');
+        // Initial warm general inquiry
+        handleSendQuestion('What should I focus on today?');
       }
     } else {
       stopSpeaking();
@@ -138,6 +142,22 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
       setIsListeningMic(false);
     }
   }, [isOpen]);
+
+  const handleExecuteAction = (resp: AISaathiResponse) => {
+    if (resp.targetView === 'emergency') {
+      if (onOpenSOS) {
+        onOpenSOS();
+      } else if (onNavigate) {
+        onNavigate('emergency');
+      }
+      onClose();
+      return;
+    }
+    if (resp.targetView && onNavigate) {
+      onNavigate(resp.targetView as AppView, resp.targetGameId as GameId);
+      onClose();
+    }
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -186,11 +206,6 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
-
-      // Automatically speak summary aloud if requested or elder-friendly
-      if (response.recommendationDetails) {
-        speakAloud(`${response.recommendationTitle}. ${response.recommendationDetails}`);
-      }
     } catch (err) {
       console.error('AI Saathi error:', err);
     } finally {
@@ -236,6 +251,11 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
   };
 
   const speakAloud = (text: string) => {
+    if (isSpeakingVoice) {
+      stopSpeaking();
+      setIsSpeakingVoice(false);
+      return;
+    }
     stopSpeaking();
     setIsSpeakingVoice(true);
     speak(text, language, () => {
@@ -252,14 +272,15 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
   };
 
   const QUICK_QUESTIONS = [
-    'What should I eat today to stay healthy?',
-    'Can I go for a walk today?',
-    'What should I eat for breakfast?',
-    'Why am I feeling tired?',
-    'Explain my blood pressure in simple words.',
-    'How much water should I drink?',
-    'What can I do to sleep better?',
-    'What should I avoid eating?',
+    'What should I focus on today?',
+    'Should I go for a walk today?',
+    'Which memory game should I play?',
+    'Explain my blood pressure in simple words',
+    'Why am I feeling more tired today?',
+    'What time is my medicine?',
+    'How did I sleep compared to my usual?',
+    'Show me my family memories',
+    'What should I eat for lunch today?',
   ];
 
   return (
@@ -286,7 +307,7 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                   </span>
                 </div>
                 <p className="text-xs text-[#3e4941]">
-                  Personalized using {patient.name}'s 7-day vitals, medications, diet & authoritative health research.
+                  Personalized health, wellness, cognitive care & daily guidance for {patient.name}.
                 </p>
               </div>
             </div>
@@ -379,15 +400,33 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
               <div key={item.id} className="flex flex-col space-y-3 max-w-2xl">
                 {/* Main Card */}
                 <div className="bg-white rounded-3xl border-2 border-[#becabf]/70 shadow-md p-5 sm:p-6 space-y-4 font-sans relative overflow-hidden">
-                  {/* Top Badge: Intent & Personalization Score */}
+                  {/* Top Badge: Intent, Data Source Mode & Personalization Score */}
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-[#becabf]/30">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-bold uppercase tracking-wider text-[#416740] flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" />
                         Recommended for You
                       </span>
+                      {resp.dataSourceMode === 'INTERNAL_RECORDS' && (
+                        <span className="text-[10px] font-bold text-[#365A46] bg-[#E4EBDD] border border-[rgba(70,80,60,0.12)] px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-[#52745C]" />
+                          Internal Records
+                        </span>
+                      )}
+                      {resp.dataSourceMode === 'HYBRID' && (
+                        <span className="text-[10px] font-bold text-[#365A46] bg-[#E4EBDD] border border-[rgba(70,80,60,0.12)] px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <BookOpen className="w-3 h-3 text-[#52745C]" />
+                          Records + Clinical Sources
+                        </span>
+                      )}
+                      {resp.dataSourceMode === 'EXTERNAL_WEB' && (
+                        <span className="text-[10px] font-bold text-[#52745C] bg-[#EDE7F4] border border-[#CBD7C5] px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <BookOpen className="w-3 h-3 text-[#52745C]" />
+                          Authoritative Guidelines
+                        </span>
+                      )}
                       {resp.modelUsed && (
-                        <span className="text-[10px] font-mono text-[#6f7a70] bg-[#ecefea] px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-mono text-[#68736B] bg-[#F5EFE4] px-2 py-0.5 rounded-md">
                           {resp.modelUsed}
                         </span>
                       )}
@@ -397,24 +436,79 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                     {resp.signalsUsed && resp.signalsUsed.length > 0 && (
                       <button
                         onClick={() => setSelectedSignalsForModal(resp.signalsUsed)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#edf3ec] hover:bg-[#bfebba]/50 text-[#032517] text-xs font-bold border border-[#becabf]/60 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E4EBDD] hover:bg-[#CBD7C5] text-[#1F342A] text-xs font-bold border border-[rgba(70,80,60,0.12)] transition-colors cursor-pointer"
                         title="View the exact patient factors used"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#416740]" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#52745C]" />
                         <span>Personalized using {resp.signalsUsed.length} health signals</span>
                       </button>
                     )}
                   </div>
 
+                  {/* Executed Stages Audit Trail */}
+                  {resp.executedStages && resp.executedStages.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 py-1.5 px-3 rounded-xl bg-[#FAF7F0] border border-[rgba(70,80,60,0.08)] text-[11px] text-[#52745C]">
+                      <span className="font-bold text-[#1F342A] mr-1">Steps executed:</span>
+                      {resp.executedStages.map((st, i) => (
+                        <span key={i} className="inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-[#52745C]" />
+                          <span>{st.title || st.name}</span>
+                          {i < resp.executedStages!.length - 1 && <span className="text-[#8A918A] mx-0.5">→</span>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Missing Data Honesty Notice */}
+                  {resp.missingDataNotice && (
+                    <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[#FFF3E6] border border-[#F5EFE4] text-xs text-[#8C5D30]">
+                      <Info className="w-4 h-4 text-[#8C5D30] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">Missing Record Note: </span>
+                        <span>{resp.missingDataNotice}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Recommendation Title */}
-                  <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#032517] leading-snug">
+                  <h3 className="text-xl sm:text-2xl font-serif font-bold text-[#1F342A] leading-snug">
                     {resp.recommendationTitle}
                   </h3>
 
                   {/* Recommendation Details */}
-                  <p className="text-sm sm:text-base text-[#181d19] leading-relaxed font-medium">
+                  <p className="text-sm sm:text-base text-[#1F342A] leading-relaxed font-medium">
                     {resp.recommendationDetails}
                   </p>
+
+                  {/* 7-Day Personal Baseline Comparison */}
+                  {resp.baselineComparison && resp.baselineComparison.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[rgba(70,80,60,0.08)] space-y-2">
+                      <div className="text-xs font-bold uppercase tracking-wider text-[#52745C] flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <HeartPulse className="w-3.5 h-3.5" />
+                          7-Day Personal Baseline Comparison
+                        </span>
+                        <span className="text-[10px] text-[#8A918A] font-normal">Compared to your personal typical range</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {resp.baselineComparison.map((item, idx) => (
+                          <div key={idx} className="p-2.5 rounded-xl bg-[#FBF7EF] border border-[rgba(70,80,60,0.08)] text-xs space-y-1">
+                            <div className="flex items-center justify-between font-bold text-[#1F342A]">
+                              <span>{item.metric}</span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#E4EBDD] text-[#365A46]">
+                                {item.difference || item.status || 'Tracked'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-[#68736B] flex justify-between">
+                              <span>Today: <strong className="text-[#1F342A]">{item.todayValue || item.patientCurrent}</strong></span>
+                              <span>Baseline: <strong className="text-[#1F342A]">{item.baselineAvg7Day || item.patientBaseline}</strong></span>
+                            </div>
+                            <p className="text-[11px] text-[#68736B] leading-snug">{item.interpretation || item.comparisonText}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Why it may suit you (Bullet points) */}
                   {resp.whyItSuitsYou && resp.whyItSuitsYou.length > 0 && (
@@ -433,6 +527,34 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                     </div>
                   )}
 
+                  {/* Suggested Next Step & Direct Action Button */}
+                  {resp.suggestedAction && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-[#edf3ec] to-[#f2f7f9] border border-[#becabf]/70">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-[#032517] text-white flex items-center justify-center shrink-0">
+                          <Sparkles className="w-4 h-4 text-[#bfebba]" />
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-[#416740] uppercase tracking-wide">Suggested Next Step</div>
+                          <div className="text-xs sm:text-sm font-bold text-[#032517]">{resp.suggestedAction}</div>
+                        </div>
+                      </div>
+                      {resp.targetView && (
+                        <button
+                          onClick={() => handleExecuteAction(resp)}
+                          className={`px-4 py-2 rounded-xl text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1.5 ${
+                            resp.targetView === 'emergency'
+                              ? 'bg-rose-600 hover:bg-rose-700 animate-pulse'
+                              : 'bg-[#032517] hover:bg-[#416740]'
+                          }`}
+                        >
+                          <span>{resp.targetView === 'emergency' ? 'Open SOS Emergency' : 'Take Action'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Alternative Option */}
                   {resp.alternativeOption && (
                     <div className="text-xs sm:text-sm text-[#3e4941] pt-1">
@@ -448,10 +570,19 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                         onClick={() =>
                           speakAloud(`${resp.recommendationTitle}. ${resp.recommendationDetails}`)
                         }
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#032517] text-white hover:bg-[#416740] text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer ${
+                          isSpeakingVoice
+                            ? 'bg-[#631d08] text-white hover:bg-[#85270d]'
+                            : 'bg-[#032517] text-white hover:bg-[#416740]'
+                        }`}
+                        title={isSpeakingVoice ? 'Stop speaking' : 'Read aloud'}
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
-                        <span>Read Aloud</span>
+                        {isSpeakingVoice ? (
+                          <VolumeX className="w-3.5 h-3.5 text-[#ffdbd1]" />
+                        ) : (
+                          <Volume2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isSpeakingVoice ? 'Stop' : 'Read Aloud'}</span>
                       </button>
 
                       <button
@@ -515,8 +646,8 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                     </div>
                   )}
 
-                  {/* Sources Checked Pill & View Sources Button */}
-                  {resp.sourcesChecked && resp.sourcesChecked.length > 0 && (
+                  {/* Source Transparency: Web Sources Checked VS Internal Records */}
+                  {resp.searchPerformed && resp.sourcesChecked && resp.sourcesChecked.length > 0 ? (
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-[#f7faf5] border border-[#becabf]/50 text-xs">
                       <div className="flex items-center gap-2">
                         <BookOpen className="w-4 h-4 text-[#416740]" />
@@ -532,6 +663,12 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                         <span>View Sources ({resp.sourcesChecked.length})</span>
                         <ExternalLink className="w-3 h-3 text-[#416740]" />
                       </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-[#edf3ec]/70 border border-[#becabf]/40 text-xs text-[#3e4941]">
+                      <ShieldCheck className="w-4 h-4 text-[#416740] shrink-0" />
+                      <span className="font-semibold text-[#032517]">Based on your health and activity records</span>
+                      <span className="text-[11px] text-[#6f7a70]">• No external web search required</span>
                     </div>
                   )}
 
@@ -570,7 +707,7 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                   </div>
                   <div>
                     <span className="text-[11px] font-bold text-[#416740] uppercase tracking-wider block">
-                      AI Saathi Intelligence Pipeline • Step {pipelineStage.stage} of 6
+                      AI Saathi Intelligence Pipeline • Step {pipelineStage.stage}
                     </span>
                     <h4 className="text-sm font-bold text-[#032517]">
                       {pipelineStage.title}
@@ -588,7 +725,7 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                 <div className="w-full bg-[#ecefea] rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-[#416740] h-full transition-all duration-300"
-                    style={{ width: `${(pipelineStage.stage / 6) * 100}%` }}
+                    style={{ width: `${Math.min(100, Math.max(15, (pipelineStage.stage / 5) * 100))}%` }}
                   />
                 </div>
               </div>
@@ -648,7 +785,7 @@ export const AISaathiHealthCompanion: React.FC<AISaathiHealthCompanionProps> = (
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSendQuestion(inputQuery);
                 }}
-                placeholder="Ask AI Saathi (e.g. What should I eat for breakfast?)"
+                placeholder="Ask AI Saathi (e.g., How did I sleep? Can I walk today? Which brain game?)"
                 disabled={isProcessing}
                 className="w-full pl-5 pr-12 py-3.5 rounded-2xl bg-white border-2 border-[#becabf]/70 focus:border-[#032517] focus:outline-none text-sm sm:text-base font-medium text-[#032517] placeholder:text-[#6f7a70] shadow-xs"
               />

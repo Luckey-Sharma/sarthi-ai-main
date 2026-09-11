@@ -184,6 +184,11 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
   if (!isOpen) return null;
 
   const handleSpeakText = (text: string) => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+      return;
+    }
     stopSpeaking();
     setIsSpeaking(true);
     speak(text, language, () => {
@@ -301,11 +306,6 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
       };
 
       setMessages((prev) => [...prev, sarthiMsg]);
-
-      // If urgent or emergency, optionally speak or highlight
-      if (apiRes.safetyCategory === 'EMERGENCY') {
-        handleSpeakText(apiRes.message);
-      }
     } catch {
       const rec = quickActionKey
         ? handleQuickAction(quickActionKey, context)
@@ -623,48 +623,48 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-900/75 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
-      <div className="bg-[#ffffff] rounded-3xl shadow-2xl border-2 border-[#becabf]/60 max-w-2xl w-full flex flex-col h-[92vh] max-h-[760px] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200 font-sans">
+      <div className="bg-[#FAF6EE] rounded-[32px] shadow-2xl border border-[rgba(70,80,60,0.15)] max-w-2xl w-full flex flex-col h-[92vh] max-h-[760px] overflow-hidden">
         {/* Modal Top Header */}
-        <div className="bg-[#032517] text-white p-4 sm:p-5 flex items-center justify-between shadow-md shrink-0 border-b border-[#1b3b2b]">
+        <div className="bg-gradient-to-r from-[#1F342A] via-[#263F33] to-[#1F342A] text-white p-4 sm:p-5 flex items-center justify-between shadow-md shrink-0 border-b border-[#708A74]/30">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#1b3b2b] border border-[#83a590]/50 flex items-center justify-center text-white shadow-inner">
-              <span className="material-symbols-outlined text-[26px] text-[#bfebba]">spa</span>
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-inner">
+              <span className="material-symbols-outlined text-[26px] text-[#D9E8D8]">spa</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-white">
+                <h2 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#FAF6EE]">
                   {language === 'as' || language === 'bn' ? 'সাৰথী' : 'Sarthi'}
                 </h2>
-                <span className="text-[10px] sm:text-xs font-bold text-[#bfebba] bg-[#1b3b2b] px-2.5 py-0.5 rounded-full border border-[#83a590]/40">
+                <span className="text-[10px] sm:text-xs font-bold text-[#1F342A] bg-[#D9E8D8] px-2.5 py-0.5 rounded-full border border-[#708A74]/40">
                   {language === 'hi' ? 'संज्ञानात्मक साथी' : language === 'as' ? 'জ্ঞাত্বী সহায়ক' : language === 'bn' ? 'কগনিটিভ সঙ্গী' : 'Care Companion'}
                 </span>
                 {syncStatus === 'offline' && (
-                  <span className="text-[10px] font-bold bg-[#631d08] text-[#ffdbd1] border border-[#ffdbd1]/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="text-[10px] font-bold bg-[#BF5844] text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                     <WifiOff className="w-3 h-3" />
                     <span>Offline</span>
                   </span>
                 )}
                 {syncStatus === 'syncing' && (
-                  <span className="text-[10px] font-bold bg-[#7a5800] text-[#ffebc8] border border-[#ffebc8]/40 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                  <span className="text-[10px] font-bold bg-[#FFF6D6] text-[#785E22] border border-[#E0D5B5] px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
                     <RefreshCw className="w-3 h-3 animate-spin" />
                     <span>Syncing...</span>
                   </span>
                 )}
                 {syncStatus === 'synced' && (
-                  <span className="text-[10px] font-bold bg-[#1b3b2b] text-[#bfebba] border border-[#bfebba]/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
+                  <span className="text-[10px] font-bold bg-[#D9E8D8] text-[#1F342A] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-[#708A74]" />
                     <span>Synced</span>
                   </span>
                 )}
                 {syncStatus === 'online' && (
-                  <span className="text-[10px] font-bold bg-[#1b3b2b] text-[#bfebba] border border-[#83a590]/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Wifi className="w-3 h-3" />
+                  <span className="text-[10px] font-bold bg-[#D9E8D8] text-[#1F342A] border border-[#708A74]/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Wifi className="w-3 h-3 text-[#708A74]" />
                     <span>Connected</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#83a590] font-medium">
+              <p className="text-xs text-[#D9E8D8]/80 font-medium">
                 {patient.name} • SafeNet AI • Non-Diagnostic Companion
               </p>
             </div>
@@ -674,7 +674,7 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
             {isSpeaking ? (
               <button
                 onClick={handleStopSpeaking}
-                className="px-3 py-1.5 rounded-xl bg-[#631d08] hover:bg-[#420b00] text-white font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition-transform active:scale-95"
+                className="px-3.5 py-1.5 rounded-xl bg-[#BF5844] hover:bg-[#a64835] text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition-transform active:scale-95"
                 title="Stop Speaking"
               >
                 <VolumeX className="w-4 h-4" />
@@ -683,7 +683,7 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
             ) : (
               <button
                 onClick={() => messages[messages.length - 1] && handleSpeakText(messages[messages.length - 1].text)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#bfebba] cursor-pointer transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#FAF6EE] cursor-pointer transition-colors"
                 title="Read Aloud"
               >
                 <Volume2 className="w-5 h-5" />
@@ -701,9 +701,9 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
         </div>
 
         {/* SIH Live Demo Scenarios Bar for Evaluators / Testing */}
-        <div className="bg-[#1b3b2b] text-white px-3 py-2 border-b border-[#83a590]/30 shrink-0 text-xs flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <span className="font-bold text-[#bfebba] text-[11px] uppercase tracking-wider shrink-0 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-[#bfebba]" />
+        <div className="bg-[#263F33] text-white px-3 py-2 border-b border-[#708A74]/30 shrink-0 text-xs flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span className="font-bold text-[#FFF6D6] text-[11px] uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-[#FFF6D6]" />
             <span>SIH Scenarios:</span>
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -711,7 +711,7 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
               <button
                 key={sc.id}
                 onClick={() => processQuery(sc.query)}
-                className="px-2.5 py-1 rounded-lg bg-[#032517] hover:bg-[#416740] active:bg-[#631d08] text-[#f7faf5] hover:text-white font-bold text-[11px] whitespace-nowrap transition-colors border border-[#83a590]/40 cursor-pointer"
+                className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-[#FAF6EE] font-bold text-[11px] whitespace-nowrap transition-colors border border-white/10 cursor-pointer"
                 title={sc.query}
               >
                 {sc.title}
@@ -721,19 +721,19 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
         </div>
 
         {/* Conversation Feed */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#f7faf5]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#FAF6EE]">
           {messages.map((msg) => (
             <div
               key={msg.id}
               className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div
-                className={`max-w-[92%] sm:max-w-[88%] rounded-3xl p-4 sm:p-5 shadow-sm space-y-3 ${
+                className={`max-w-[92%] sm:max-w-[88%] rounded-3xl p-4 sm:p-5 shadow-[0_4px_20px_rgba(70,80,60,0.05)] space-y-3 ${
                   msg.sender === 'user'
-                    ? 'bg-[#032517] text-white rounded-tr-xs'
+                    ? 'bg-[#1F342A] text-white rounded-tr-xs'
                     : msg.safetyCategory === 'EMERGENCY'
-                    ? 'bg-[#ffdbd1]/50 border-2 border-[#631d08] text-[#420b00] rounded-tl-xs'
-                    : 'bg-[#ffffff] border border-[#becabf]/70 text-[#181d19] rounded-tl-xs shadow-xs'
+                    ? 'bg-[#FDECEF] border-2 border-[#BF5844] text-[#7A2818] rounded-tl-xs'
+                    : 'bg-white border border-[rgba(70,80,60,0.1)] text-[#1F342A] rounded-tl-xs'
                 }`}
               >
                 <p className="font-serif text-lg sm:text-xl font-medium leading-relaxed whitespace-pre-line">
@@ -879,8 +879,8 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
         </div>
 
         {/* Quick Action One-Tap Grid (Elderly Friendly, No Typing Needed) */}
-        <div className="p-3 sm:p-4 bg-white border-t border-[#ecefea] shrink-0 font-sans">
-          <p className="text-[11px] font-bold text-[#456c44] uppercase tracking-wider mb-2 text-center">
+        <div className="p-3.5 sm:p-4 bg-white/80 backdrop-blur-md border-t border-[rgba(70,80,60,0.1)] shrink-0 font-sans">
+          <p className="text-[11px] font-bold text-[#5A7360] uppercase tracking-wider mb-2 text-center">
             {language === 'hi'
               ? 'स्पर्श करके पूछें:'
               : language === 'as'
@@ -897,12 +897,12 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
               <button
                 key={action.key}
                 onClick={() => handleSelectQuickAction(action.key, action.label)}
-                className="p-3 rounded-2xl bg-[#f7faf5] hover:bg-[#ecefea] active:bg-[#d8dbd6] border border-[#becabf]/60 text-left transition-all cursor-pointer flex items-center gap-2.5 group shadow-2xs min-h-[56px]"
+                className="p-3 rounded-2xl bg-white hover:bg-[#F5EBE1]/60 active:bg-[#F5EBE1] border border-[rgba(70,80,60,0.1)] text-left transition-all cursor-pointer flex items-center gap-2.5 group shadow-xs min-h-[54px]"
               >
-                <div className="w-8 h-8 rounded-xl bg-white shadow-xs border border-[#becabf]/40 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-lg">
+                <div className="w-8 h-8 rounded-xl bg-[#FAF6EE] border border-[rgba(70,80,60,0.08)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-lg">
                   {action.icon}
                 </div>
-                <span className="text-xs font-bold text-[#181d19] line-clamp-1">
+                <span className="text-xs font-bold text-[#1F342A] line-clamp-1">
                   {action.label}
                 </span>
               </button>
@@ -920,13 +920,13 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
               onClick={handleToggleMic}
               className={`p-3 rounded-2xl border transition-all cursor-pointer shrink-0 flex items-center justify-center ${
                 isListeningMic
-                  ? 'bg-[#631d08] text-white border-[#420b00] animate-bounce shadow-md'
-                  : 'bg-[#ecefea] hover:bg-[#bfebba]/50 text-[#032517] border-[#becabf]'
+                  ? 'bg-[#BF5844] text-white border-[#BF5844] animate-bounce shadow-md'
+                  : 'bg-[#F5EBE1]/80 hover:bg-[#F5EBE1] text-[#1F342A] border-[rgba(70,80,60,0.12)]'
               }`}
               title={isListeningMic ? 'Stop Listening' : 'Speak with Voice'}
               aria-label="Toggle voice microphone"
             >
-              {isListeningMic ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5" />}
+              {isListeningMic ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-[#1F342A]" />}
             </button>
 
             <input
@@ -946,18 +946,18 @@ export const SarthiCompanionModal: React.FC<SarthiCompanionModalProps> = ({
                   ? 'Sarthi da hangbiyu (eg. Dementia kari no?)...'
                   : 'Ask Sarthi (e.g. What is dementia? / Open Tea Garden)...'
               }
-              className={`flex-1 px-4 py-3 bg-[#f7faf5] border focus:bg-white rounded-2xl text-xs sm:text-sm font-medium text-[#181d19] focus:outline-none transition-all ${
-                isListeningMic ? 'border-[#631d08] bg-[#ffdbd1]/30' : 'border-[#becabf] focus:border-[#032517]'
+              className={`flex-1 px-4 py-3 bg-white border rounded-2xl text-xs sm:text-sm font-medium text-[#1F342A] focus:outline-none transition-all ${
+                isListeningMic ? 'border-[#BF5844] bg-[#FDECEF]/40' : 'border-[rgba(70,80,60,0.15)] focus:border-[#708A74]'
               }`}
             />
 
             <button
               type="submit"
               disabled={!customInput.trim()}
-              className="p-3 bg-[#032517] hover:bg-[#1b3b2b] disabled:opacity-40 text-white rounded-2xl shadow-md transition-transform active:scale-95 cursor-pointer shrink-0"
+              className="p-3 bg-[#1F342A] hover:bg-[#2A4438] disabled:opacity-40 text-white rounded-2xl shadow-md transition-transform active:scale-95 cursor-pointer shrink-0"
               title="Send"
             >
-              <Send className="w-4 h-4 text-[#bfebba]" />
+              <Send className="w-4 h-4 text-[#D9E8D8]" />
             </button>
           </form>
         </div>

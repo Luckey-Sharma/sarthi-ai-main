@@ -1,30 +1,101 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Newsreader", Georgia, serif;
-  --font-sans: "Atkinson Hyperlegible Next", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-headline: "Newsreader", Georgia, serif;
+  --font-serif: "Literata", "Newsreader", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Atkinson Hyperlegible Next", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-handwriting: "Caveat", cursive;
+  --font-headline: "Literata", "Newsreader", Georgia, serif;
   
-  --color-forest: #032517;
-  --color-forest-container: #1b3b2b;
-  --color-moss: #416740;
-  --color-moss-light: #bfebba;
-  --color-terracotta: #631d08;
-  --color-terracotta-light: #ffdbd1;
-  --color-ivory: #f7faf5;
-  --color-parchment: #ecefea;
-  --color-surface-dim: #d8dbd6;
-  --color-surface-card: #ffffff;
+  --color-cream: #FAF6EE;
+  --color-creambg: #F7F1E7;
+  --color-creamborder: rgba(70, 80, 60, 0.08);
+  --color-primary-text: #1F342A;
+  --color-sub-text: #68736B;
+  --color-muted: #8A918A;
+  
+  --color-sage: #52745C;
+  --color-sage-hover: #46654F;
+  --color-sage-dark: #365A46;
+  --color-sage-light: #E4EBDD;
+  --color-sage-50: #FAF6EE;
+  --color-sage-100: #EAEFE6;
+  --color-sage-200: #DFE7DA;
+  --color-sage-300: #CBD7C5;
+  --color-sage-400: #9FB098;
+  
+  --color-card-primary: #FBF7EF;
+  --color-card-secondary: #F5EFE4;
+  --color-card-highlight: #EFE8D8;
+
+  --color-pastel-mint: #E6EDE2;
+  --color-pastel-cream: #F3EADD;
+  --color-pastel-sand: #F3E8D6;
+  --color-pastel-sage: #EAF0E4;
+  --color-pastel-lavender: #EDE7F4;
+  --color-pastel-rose: #FDE8E5;
+  --color-pastel-blue: #EEF4FF;
+
+  --color-forest: #1F342A;
+  --color-forest-container: #365A46;
+  --color-moss: #52745C;
+  --color-moss-light: #E4EBDD;
+  --color-terracotta: #BA1A1A;
+  --color-terracotta-light: #FDE8E5;
+  --color-ivory: #FAF6EE;
+  --color-parchment: #F5EFE4;
+  --color-surface-dim: #E5DECE;
+  --color-surface-card: #FBF7EF;
 }
 
 @layer base {
   :root {
-    font-family: 'Atkinson Hyperlegible Next', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Atkinson Hyperlegible Next', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #1F342A;
   }
 
   h1, h2, h3, .font-serif, .font-headline {
-    font-family: 'Newsreader', Georgia, serif;
+    font-family: 'Literata', 'Newsreader', Georgia, serif;
   }
+
+  .font-handwriting {
+    font-family: 'Caveat', cursive;
+  }
+}
+
+/* Subtle custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF6EE;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8E0D2;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #BCC8B4;
+}
+
+.hero-mask {
+  background: linear-gradient(135deg, rgba(250, 246, 238, 0.96) 0%, rgba(247, 241, 231, 0.85) 45%, rgba(245, 239, 228, 0.25) 100%);
+}
+
+.scenic-gradient {
+  background: linear-gradient(180deg, rgba(31, 52, 42, 0.20) 0%, rgba(31, 52, 42, 0.82) 100%);
+}
+
+.shadow-cognitiva {
+  box-shadow: 0 4px 18px rgba(70, 60, 40, 0.05);
+}
+
+.shadow-cognitiva-sm {
+  box-shadow: 0 2px 8px rgba(70, 60, 40, 0.04);
+}
+
+.border-cognitiva {
+  border: 1px solid rgba(70, 80, 60, 0.08);
 }
 
 .material-symbols-outlined {
@@ -83,13 +154,13 @@
 /* Voice Avatar Pulse Animation */
 @keyframes voice-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 0 0 rgba(82, 116, 92, 0.6);
   }
   70% {
-    box-shadow: 0 0 0 16px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 16px rgba(82, 116, 92, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 0 rgba(82, 116, 92, 0);
   }
 }
 
@@ -99,6 +170,38 @@
 
 /* Accessible focus ring */
 button:focus-visible, a:focus-visible {
-  outline: 3px solid #059669;
+  outline: 3px solid #52745C;
   outline-offset: 2px;
+}
+
+/* Mobile Safe Area & Touch Ergonomics */
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Smooth momentum scrolling on iOS */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar while allowing scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Touch feedback for interactive mobile elements */
+@media (hover: none) and (pointer: coarse) {
+  button, [role="button"] {
+    -webkit-tap-highlight-color: rgba(82, 116, 92, 0.15);
+  }
 }
